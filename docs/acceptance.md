@@ -15,6 +15,8 @@
 - [ ] 启动无 lazy.nvim / LazyVim 相关报错、无 NEWS 提示
 - [ ] `vim.pack` 插件清单与 `nvim-pack-lock.json` 一致（CI lockfile 测试覆盖）
 - [ ] `:Lazy` 无此命令属预期；等效入口见 keymaps 节 `<leader>l` 项
+- [ ] LazyFile 懒加载语义消失（原事件组 `BufReadPost/BufNewFile/BufWritePre`，vim.pack 全量加载）：
+  验证打开新文件/新 buffer 时 gitsigns、trouble、todo-comments 等原 LazyFile 件行为不回归
 
 ## 二、全局选项
 
