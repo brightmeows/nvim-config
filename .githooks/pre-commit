@@ -2,4 +2,4 @@
 # pre-commit：提交前秒级门禁——格式与静态检查（命令串与 CI lint job 同源）
 set -e
 stylua --check .
-selene lua init.lua plugin
+selene lua init.lua plugin scripts
