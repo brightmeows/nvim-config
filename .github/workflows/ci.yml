@@ -44,6 +44,15 @@ jobs:
         with:
           version: stable
           neovim: true
+      - name: Place config at nvim stdpath('config')
+        run: |
+          case "$(uname -s)" in
+            MINGW*|MSYS*|CYGWIN*) cfg="${LOCALAPPDATA}/nvim" ;;
+            *) cfg="${HOME}/.config/nvim" ;;
+          esac
+          mkdir -p "$cfg"
+          cp -R "$GITHUB_WORKSPACE"/. "$cfg"/
+          test -f "$cfg/init.lua" && echo "config in place: $cfg"
       - name: Cache plugins (unix)
         if: runner.os != 'Windows'
         uses: actions/cache@v4
@@ -89,6 +98,15 @@ jobs:
         with:
           version: stable
           neovim: true
+      - name: Place config at nvim stdpath('config')
+        run: |
+          case "$(uname -s)" in
+            MINGW*|MSYS*|CYGWIN*) cfg="${LOCALAPPDATA}/nvim" ;;
+            *) cfg="${HOME}/.config/nvim" ;;
+          esac
+          mkdir -p "$cfg"
+          cp -R "$GITHUB_WORKSPACE"/. "$cfg"/
+          test -f "$cfg/init.lua" && echo "config in place: $cfg"
       - name: Fresh install per lockfile (无缓存)
         run: >-
           nvim --headless
