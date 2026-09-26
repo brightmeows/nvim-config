@@ -1,4 +1,36 @@
 -- 入口：vim.pack 装载 lua/plugins/ 下的插件（无 lazy.nvim / LazyVim）。
+local start_hrtime = vim.uv.hrtime()
+local startuptime_ms = 0
+vim.api.nvim_create_autocmd("VimEnter", {
+  once = true,
+  callback = function()
+    startuptime_ms = (vim.uv.hrtime() - start_hrtime) / 1e6
+  end,
+})
+
+-- lazy.stats 兼容垫片：snacks dashboard 的 startup 页脚（“Neovim loaded
+-- X/Y plugins in Zms”，默认 preset 的 section = "startup"）在基线由
+-- lazy.nvim 的统计模块提供，迁移后该模块消失会炸穿 UIEnter/WinResized。
+-- 按零感知判据保留页脚行为：count/loaded 取 vim.pack 托管插件数
+-- （全量加载故二者相等），startuptime 在 VimEnter 固化（与 --startuptime
+-- 的 NVIM STARTED 同口径，resolve 发生于 UIEnter，晚于 VimEnter）。
+package.preload["lazy.stats"] = function()
+  return {
+    stats = function()
+      local count = 0
+      local ok, plugs = pcall(vim.pack.get)
+      if ok and type(plugs) == "table" then
+        count = #plugs
+      end
+      return {
+        count = count,
+        loaded = count,
+        startuptime = startuptime_ms > 0 and startuptime_ms or ((vim.uv.hrtime() - start_hrtime) / 1e6),
+      }
+    end,
+  }
+end
+
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 

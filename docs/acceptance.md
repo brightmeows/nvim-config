@@ -115,8 +115,15 @@
 
 - [ ] lualine 状态栏（含 trouble 文档符号集成 `vim.g.trouble_lualine`）
 - [ ] bufferline tabline（`<S-h>/<S-l>` 切换、分隔符与主题适配；`<leader>bp/bP/br/bl/bj` pin 与分组操作）
-- [ ] 启动 dashboard（snacks dashboard）：LazyVim 预设头图与按键项 `f/n/g/r/c/s/x/l/q` 可用；
-  其中 `x`（`:LazyExtras`）、`l`（`:Lazy`）两项在迁移后无对应命令——须改为等效入口（如 `vim.pack.update()`）或移除，逐项定案
+- [x] 启动 dashboard（snacks dashboard）：预设头图与按键项 `f/n/g/r/c/s/p/l/q` 可用；
+  逐项定案：`x`（`:LazyExtras`）移除（extras 概念随发行版消失，无等效物）、
+  `l`（`:Lazy`）改为 `vim.pack.update()`、`p`（Projects，snacks_picker extra 原有项）保留。
+  startup 页脚（"Neovim loaded X/Y plugins in Zms"）依赖 lazy.stats——以 init.lua
+  顶部的兼容垫片提供等效数据（count/loaded 取 vim.pack 托管数、startuptime
+  VimEnter 固化）。
+  验证：伪 TUI（script 分配 PTY）两次实测 dashboard 打开、无 UIEnter/lazy.stats
+  报错、页脚格式与基线一致（headless 无 UIEnter，此路径 CI smoke 不覆盖，
+  以本机伪 TUI 实测为准）
 - [ ] noice：`<leader>snl/snh/sna/snd/snt` 消息历史与清除、`<leader>un` 关闭全部通知
 - [ ] which-key 弹窗与分组（timeoutlen=300 下触发正常）
 - [ ] noice 消息/cmdline/命令行签名
