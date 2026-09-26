@@ -9,13 +9,13 @@ return {
     local function map(lhs, rhs, desc)
       vim.keymap.set("n", lhs, rhs, { desc = desc, silent = true })
     end
-    -- stylua: ignore
-    map("]t", function() require("todo-comments").jump_next() end, "Next Todo Comment")
-    -- stylua: ignore
-    map("[t", function() require("todo-comments").jump_prev() end, "Previous Todo Comment")
-    -- stylua: ignore
+    map("]t", function()
+      require("todo-comments").jump_next()
+    end, "Next Todo Comment")
+    map("[t", function()
+      require("todo-comments").jump_prev()
+    end, "Previous Todo Comment")
     map("<leader>xt", "<cmd>Trouble todo toggle<cr>", "Todo (Trouble)")
-    -- stylua: ignore
     map("<leader>xT", "<cmd>Trouble todo toggle filter = {tag = {TODO,FIX,FIXME}}<cr>", "Todo/Fix/Fixme (Trouble)")
   end,
 }

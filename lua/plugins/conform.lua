@@ -43,7 +43,6 @@ return {
     })
 
     -- LazyVim formatting.lua 的 keymaps
-    -- stylua: ignore
     vim.keymap.set({ "n", "x" }, "<leader>cF", function()
       require("conform").format({ formatters = { "injected" }, timeout_ms = 3000 })
     end, { desc = "Format Injected Langs", silent = true })

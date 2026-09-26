@@ -7,9 +7,9 @@ return {
     wk.setup({
       preset = "helix",
       defaults = {},
-      -- stylua: ignore
       spec = {
-        { mode = { "n", "x" },
+        {
+          mode = { "n", "x" },
           { "<leader><tab>", group = "tabs" },
           { "<leader>c", group = "code" },
           { "<leader>d", group = "debug" },
@@ -26,15 +26,30 @@ return {
           { "g", group = "goto" },
           { "gs", group = "surround" },
           { "z", group = "fold" },
-          { "<leader>b", group = "buffer", expand = function() return require("which-key.extras").expand.buf() end },
-          { "<leader>w", group = "windows", proxy = "<c-w>", expand = function() return require("which-key.extras").expand.win() end },
+          {
+            "<leader>b",
+            group = "buffer",
+            expand = function()
+              return require("which-key.extras").expand.buf()
+            end,
+          },
+          {
+            "<leader>w",
+            group = "windows",
+            proxy = "<c-w>",
+            expand = function()
+              return require("which-key.extras").expand.win()
+            end,
+          },
           { "gx", desc = "Open with system app" },
         },
       },
     })
-    -- stylua: ignore
-    vim.keymap.set("n", "<leader>?", function() require("which-key").show({ global = false }) end, { desc = "Buffer Keymaps (which-key)", silent = true })
-    -- stylua: ignore
-    vim.keymap.set("n", "<c-w><space>", function() require("which-key").show({ keys = "<c-w>", loop = true }) end, { desc = "Window Hydra Mode (which-key)", silent = true })
+    vim.keymap.set("n", "<leader>?", function()
+      require("which-key").show({ global = false })
+    end, { desc = "Buffer Keymaps (which-key)", silent = true })
+    vim.keymap.set("n", "<c-w><space>", function()
+      require("which-key").show({ keys = "<c-w>", loop = true })
+    end, { desc = "Window Hydra Mode (which-key)", silent = true })
   end,
 }

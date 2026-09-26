@@ -4,7 +4,6 @@ return {
   name = "grug-far.nvim",
   config = function()
     require("grug-far").setup({ headerMaxWidth = 80 })
-    -- stylua: ignore
     vim.keymap.set({ "n", "x" }, "<leader>sr", function()
       local grug = require("grug-far")
       local ext = vim.bo.buftype == "" and vim.fn.expand("%:e")

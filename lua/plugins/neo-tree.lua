@@ -91,10 +91,12 @@ return {
     local function map(lhs, rhs, desc)
       vim.keymap.set("n", lhs, rhs, { desc = desc, silent = true })
     end
-    -- stylua: ignore
-    map("<leader>fe", function() require("neo-tree.command").execute({ toggle = true, dir = require("meow.root")() }) end, "Explorer NeoTree (Root Dir)")
-    -- stylua: ignore
-    map("<leader>fE", function() require("neo-tree.command").execute({ toggle = true, dir = vim.uv.cwd() }) end, "Explorer NeoTree (cwd)")
+    map("<leader>fe", function()
+      require("neo-tree.command").execute({ toggle = true, dir = require("meow.root")() })
+    end, "Explorer NeoTree (Root Dir)")
+    map("<leader>fE", function()
+      require("neo-tree.command").execute({ toggle = true, dir = vim.uv.cwd() })
+    end, "Explorer NeoTree (cwd)")
     vim.keymap.set(
       "n",
       "<leader>e",
@@ -102,9 +104,11 @@ return {
       { desc = "Explorer NeoTree (Root Dir)", remap = true, silent = true }
     )
     vim.keymap.set("n", "<leader>E", "<leader>fE", { desc = "Explorer NeoTree (cwd)", remap = true, silent = true })
-    -- stylua: ignore
-    map("<leader>ge", function() require("neo-tree.command").execute({ source = "git_status", toggle = true }) end, "Git Explorer")
-    -- stylua: ignore
-    map("<leader>be", function() require("neo-tree.command").execute({ source = "buffers", toggle = true }) end, "Buffer Explorer")
+    map("<leader>ge", function()
+      require("neo-tree.command").execute({ source = "git_status", toggle = true })
+    end, "Git Explorer")
+    map("<leader>be", function()
+      require("neo-tree.command").execute({ source = "buffers", toggle = true })
+    end, "Buffer Explorer")
   end,
 }

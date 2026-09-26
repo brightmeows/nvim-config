@@ -46,9 +46,15 @@ return {
     vim.keymap.set("n", "<leader>sna", ncmd("all"), { desc = "Noice All", silent = true })
     vim.keymap.set("n", "<leader>snd", ncmd("dismiss"), { desc = "Dismiss All", silent = true })
     vim.keymap.set("n", "<leader>snt", ncmd("pick"), { desc = "Noice Picker (Telescope/FzfLua)", silent = true })
-    -- stylua: ignore
-    vim.keymap.set({ "i", "n", "s" }, "<c-f>", function() if not require("noice.lsp").scroll(4) then return "<c-f>" end end, { silent = true, expr = true, desc = "Scroll Forward" })
-    -- stylua: ignore
-    vim.keymap.set({ "i", "n", "s" }, "<c-b>", function() if not require("noice.lsp").scroll(-4) then return "<c-b>" end end, { silent = true, expr = true, desc = "Scroll Backward" })
+    vim.keymap.set({ "i", "n", "s" }, "<c-f>", function()
+      if not require("noice.lsp").scroll(4) then
+        return "<c-f>"
+      end
+    end, { silent = true, expr = true, desc = "Scroll Forward" })
+    vim.keymap.set({ "i", "n", "s" }, "<c-b>", function()
+      if not require("noice.lsp").scroll(-4) then
+        return "<c-b>"
+      end
+    end, { silent = true, expr = true, desc = "Scroll Backward" })
   end,
 }

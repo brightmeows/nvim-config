@@ -129,24 +129,33 @@ local opts = {
           ███████╗██║  ██║███████╗   ██║    ╚████╔╝ ██║██║ ╚═╝ ██║           
           ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝     ╚═══╝  ╚═╝╚═╝     ╚═╝           
    ]],
-      -- stylua: ignore
       ---@type snacks.dashboard.Item[]
       keys = {
-            { icon = " ", key = "f", desc = "Find File", action = ":lua Snacks.dashboard.pick('files')" },
-            { icon = " ", key = "n", desc = "New File", action = ":ene | startinsert" },
-            { icon = " ", key = "g", desc = "Find Text", action = ":lua Snacks.dashboard.pick('live_grep')" },
-            { icon = " ", key = "r", desc = "Recent Files", action = ":lua Snacks.dashboard.pick('oldfiles')" },
-            { icon = " ", key = "c", desc = "Config", action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})" },
-            { icon = " ", key = "s", desc = "Restore Session", section = "session" },
-            { icon = " ", key = "p", desc = "Projects", action = ":lua Snacks.picker.projects()" },
-          { icon = "󰒲 ", key = "l", desc = "Update Plugins", action = function()
+        { icon = " ", key = "f", desc = "Find File", action = ":lua Snacks.dashboard.pick('files')" },
+        { icon = " ", key = "n", desc = "New File", action = ":ene | startinsert" },
+        { icon = " ", key = "g", desc = "Find Text", action = ":lua Snacks.dashboard.pick('live_grep')" },
+        { icon = " ", key = "r", desc = "Recent Files", action = ":lua Snacks.dashboard.pick('oldfiles')" },
+        {
+          icon = " ",
+          key = "c",
+          desc = "Config",
+          action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})",
+        },
+        { icon = " ", key = "s", desc = "Restore Session", section = "session" },
+        { icon = " ", key = "p", desc = "Projects", action = ":lua Snacks.picker.projects()" },
+        {
+          icon = "󰒲 ",
+          key = "l",
+          desc = "Update Plugins",
+          action = function()
             -- 下载阶段无内建可见反馈（进度只进 messages 且被 dashboard
             -- 盖住），先给出即时提示避免“按下无反应”观感；确认页打开后
             -- 由 config/autocmds.lua 的 nvim-pack FileType 提示操作方式。
             vim.notify("检查插件更新中…稍后打开确认页", vim.log.levels.INFO, { title = "vim.pack" })
             vim.pack.update()
-          end },
-            { icon = " ", key = "q", desc = "Quit", action = ":qa" },
+          end,
+        },
+        { icon = " ", key = "q", desc = "Quit", action = ":qa" },
       },
     },
   },
@@ -162,13 +171,15 @@ return {
     vim.notify = notify
 
     -- LazyVim util.lua 的 scratch keymaps 与 ui.lua 的通知键
-    -- stylua: ignore
-    vim.keymap.set("n", "<leader>.", function() Snacks.scratch() end, { desc = "Toggle Scratch Buffer", silent = true })
-    -- stylua: ignore
-    vim.keymap.set("n", "<leader>S", function() Snacks.scratch.select() end, { desc = "Select Scratch Buffer", silent = true })
-    -- stylua: ignore
-    vim.keymap.set("n", "<leader>dps", function() Snacks.profiler.scratch() end, { desc = "Profiler Scratch Buffer", silent = true })
-    -- stylua: ignore
+    vim.keymap.set("n", "<leader>.", function()
+      Snacks.scratch()
+    end, { desc = "Toggle Scratch Buffer", silent = true })
+    vim.keymap.set("n", "<leader>S", function()
+      Snacks.scratch.select()
+    end, { desc = "Select Scratch Buffer", silent = true })
+    vim.keymap.set("n", "<leader>dps", function()
+      Snacks.profiler.scratch()
+    end, { desc = "Profiler Scratch Buffer", silent = true })
     vim.keymap.set("n", "<leader>n", function()
       if Snacks.config.picker and Snacks.config.picker.enabled then
         Snacks.picker.notifications()
@@ -176,7 +187,8 @@ return {
         Snacks.notifier.show_history()
       end
     end, { desc = "Notification History", silent = true })
-    -- stylua: ignore
-    vim.keymap.set("n", "<leader>un", function() Snacks.notifier.hide() end, { desc = "Dismiss All Notifications", silent = true })
+    vim.keymap.set("n", "<leader>un", function()
+      Snacks.notifier.hide()
+    end, { desc = "Dismiss All Notifications", silent = true })
   end,
 }

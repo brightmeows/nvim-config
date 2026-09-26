@@ -7,10 +7,12 @@ return {
     local icons = require("meow").icons
     require("bufferline").setup({
       options = {
-        -- stylua: ignore
-        close_command = function(n) Snacks.bufdelete(n) end,
-        -- stylua: ignore
-        right_mouse_command = function(n) Snacks.bufdelete(n) end,
+        close_command = function(n)
+          Snacks.bufdelete(n)
+        end,
+        right_mouse_command = function(n)
+          Snacks.bufdelete(n)
+        end,
         diagnostics = "nvim_lsp",
         always_show_bufferline = false,
         diagnostics_indicator = function(_, _, diag)
@@ -41,27 +43,16 @@ return {
     local function map(lhs, rhs, desc)
       vim.keymap.set("n", lhs, rhs, { desc = desc, silent = true })
     end
-    -- stylua: ignore
     map("<leader>bp", "<Cmd>BufferLineTogglePin<CR>", "Toggle Pin")
-    -- stylua: ignore
     map("<leader>bP", "<Cmd>BufferLineGroupClose ungrouped<CR>", "Delete Non-Pinned Buffers")
-    -- stylua: ignore
     map("<leader>br", "<Cmd>BufferLineCloseRight<CR>", "Delete Buffers to the Right")
-    -- stylua: ignore
     map("<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", "Delete Buffers to the Left")
-    -- stylua: ignore
     map("<S-h>", "<cmd>BufferLineCyclePrev<cr>", "Prev Buffer")
-    -- stylua: ignore
     map("<S-l>", "<cmd>BufferLineCycleNext<cr>", "Next Buffer")
-    -- stylua: ignore
     map("[b", "<cmd>BufferLineCyclePrev<cr>", "Prev Buffer")
-    -- stylua: ignore
     map("]b", "<cmd>BufferLineCycleNext<cr>", "Next Buffer")
-    -- stylua: ignore
     map("[B", "<cmd>BufferLineMovePrev<cr>", "Move buffer prev")
-    -- stylua: ignore
     map("]B", "<cmd>BufferLineMoveNext<cr>", "Move buffer next")
-    -- stylua: ignore
     map("<leader>bj", "<cmd>BufferLinePick<cr>", "Pick Buffer")
   end,
 }
