@@ -5,12 +5,26 @@
 
 ## 安装
 
-前置：Neovim 0.12+、git、（可选）`tree-sitter-cli` 0.26+ 与 C 编译器（treesitter parser 用）。
+前置：Neovim 0.12+、git、`rg`（`:grep` 与文件检索的硬依赖）；（可选）
+`tree-sitter-cli` 0.26+ 与 C 编译器（treesitter parser 用）、`fd`（snacks
+explorer 检索依赖）、`lazygit`（缺则相关键位自动隐藏）。
+
+Linux / macOS：
 
 ```bash
 git clone https://github.com/brightmeows/nvim-config.git ~/.config/nvim
 nvim  # 首次启动按锁文件安装全部插件
 ```
+
+Windows（PowerShell）：
+
+```powershell
+git clone https://github.com/brightmeows/nvim-config.git "$env:LOCALAPPDATA\nvim"
+nvim  # 首次启动按锁文件安装全部插件
+```
+
+平台支持：三平台适配——Linux 实测日常使用；macOS / Windows 由 CI 的 headless
+smoke 覆盖启动路径，欢迎反馈使用差异。
 
 ## 多机同步
 
@@ -32,7 +46,8 @@ nvim                          # 重启即按锁文件装齐对应版本
 git -C ~/.config/nvim config core.hooksPath .githooks
 ```
 
-CI（GitHub Actions）另含 headless 启动 smoke 与 lockfile 全新安装测试。
+CI（GitHub Actions）另跑 lint（与 hook 同命令）、三平台 headless 启动 smoke
+与 lockfile 全新安装测试。
 
 ## 结构
 
@@ -41,6 +56,7 @@ init.lua            入口：vim.pack.add 装载 lua/plugins/ 下的全部插件
 lua/config/         全局选项、autocmd、keymaps、自定义件
 lua/plugins/        每插件一个文件，返回 vim.pack spec + setup
 plugin/after/       启动期直接生效的钩子（透明主题）
+scripts/            锁文件与盘上 git HEAD 一致性校验（本地与 CI 共用）
 docs/acceptance.md  行为验收清单
 ```
 
