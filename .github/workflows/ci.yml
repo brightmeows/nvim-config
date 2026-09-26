@@ -24,10 +24,15 @@ jobs:
           unzip -qo /tmp/selene.zip -d "$HOME/.local/bin"
           chmod +x "$HOME/.local/bin/selene"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: stylua --check .
-        run: stylua --check .
-      - name: selene lua init.lua plugin scripts
-        run: selene lua init.lua plugin scripts
+      - name: Install pre-commit
+        run: |
+          if ! command -v pre-commit >/dev/null 2>&1; then
+            python3 -m pip install --user --break-system-packages pre-commit
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          pre-commit --version
+      - name: pre-commit run --all-files（与本地钩子同源）
+        run: pre-commit run --all-files
 
   smoke:
     strategy:
