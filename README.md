@@ -40,14 +40,17 @@ nvim                          # 重启即按锁文件装齐对应版本
 
 ## 本地检查
 
-提交前 hook 跑 `stylua --check` 与 `selene`（安装一次即可）：
+提交前钩子由 [pre-commit](https://pre-commit.com) 管理，定义在
+`.pre-commit-config.yaml`（`repo: local` 全本地脚本，与 CI lint 同源）。
+每台设备安装一次：
 
 ```bash
-git -C ~/.config/nvim config core.hooksPath .githooks
+sudo pacman -S pre-commit stylua selene   # Arch；其它平台用上游发布包 / pip
+cd ~/.config/nvim && pre-commit install   # 在配置目录内启用钩子
 ```
 
-CI（GitHub Actions）另跑 lint（与 hook 同命令）、三平台 headless 启动 smoke
-与 lockfile 全新安装测试。
+CI（GitHub Actions）以 `pre-commit run --all-files` 跑同一组 lint，另含
+三平台 headless 启动 smoke 与 lockfile 全新安装测试。
 
 ## 结构
 
