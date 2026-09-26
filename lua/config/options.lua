@@ -1,11 +1,17 @@
--- 全局选项。行为源：LazyVim 16.0 lua/lazyvim/config/options.lua（已剔除
--- 引用 LazyVim 函数的 formatexpr/statuscolumn，随对应域在插件接线期复刻），
+-- 全局选项。行为源：LazyVim 16.0 lua/lazyvim/config/options.lua，
 -- 叠加基线覆盖项（relativenumber / autoformat）。
 require("config.remote_clipboard").setup()
 
 -- 基线覆盖（对 LazyVim 默认的偏离，保持零感知）
 vim.g.autoformat = false -- 保存不自动格式化
 vim.g.snacks_animate = true
+
+-- LazyVim 默认 options 中被插件配置/工具层读取的全局项（行为源：
+-- LazyVim config/options.lua 同名项）
+vim.g.ai_cmp = true
+vim.g.root_spec = { "lsp", { ".git", "lua" }, "cwd" }
+vim.g.root_lsp_ignore = { "copilot" }
+vim.g.trouble_lualine = true
 
 local opt = vim.opt
 
@@ -27,6 +33,9 @@ opt.fillchars = {
 opt.foldlevel = 99
 opt.foldmethod = "indent"
 opt.foldtext = ""
+-- LazyVim 同项，改挂 meow 层（conform 的 formatexpr / snacks.statuscolumn 渲染）
+opt.formatexpr = "v:lua.require('meow.format').formatexpr()"
+opt.statuscolumn = [[%!v:lua.require('meow').statuscolumn()]]
 opt.formatoptions = "jcroqlnt" -- tcqj
 opt.grepformat = "%f:%l:%c:%m"
 opt.grepprg = "rg --vimgrep"

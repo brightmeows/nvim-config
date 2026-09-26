@@ -1,0 +1,19 @@
+-- grug-far：多文件搜索替换。行为源：LazyVim plugins/editor.lua 的 grug-far spec。
+return {
+  src = "https://github.com/MagicDuck/grug-far.nvim",
+  name = "grug-far.nvim",
+  config = function()
+    require("grug-far").setup({ headerMaxWidth = 80 })
+    -- stylua: ignore
+    vim.keymap.set({ "n", "x" }, "<leader>sr", function()
+      local grug = require("grug-far")
+      local ext = vim.bo.buftype == "" and vim.fn.expand("%:e")
+      grug.open({
+        transient = true,
+        prefills = {
+          filesFilter = ext and ext ~= "" and "*." .. ext or nil,
+        },
+      })
+    end, { desc = "Search and Replace", silent = true })
+  end,
+}

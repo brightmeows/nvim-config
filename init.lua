@@ -48,6 +48,10 @@ if #specs > 0 then
   vim.pack.add(specs, { confirm = false })
 end
 
+-- Snacks 全局在 require("snacks") 时建立；config 按文件名字典序执行，
+-- gitsigns/which-key 等字母序在 snacks 之前的文件也依赖它，先建立。
+pcall(require, "snacks")
+
 for _, c in ipairs(configs) do
   if c.config then
     -- 错误直接上抛：启动失败必须可见，headless smoke 才能捕获
