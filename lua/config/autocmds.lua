@@ -132,15 +132,25 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 })
 
 -- vim.pack 确认页操作提示（非 LazyVim 来源——vim.pack 的新增 UX 补丁）。
--- 确认缓冲是普通列表 buffer，:write/:quit 的约定无处可见，打开时主动提示。
+-- :write/:quit 的约定无处可见，确认页打开时把提示写进缓冲首行
+-- （show_confirm_buf 一次性写入后才设 filetype，此刻插入安全；
+-- get_update_map 只解析 `^# `/`^## ` 开头的行，提示行不匹配故不影响应用）。
+local pack_hint_ns = vim.api.nvim_create_namespace("meow.pack_hint")
 vim.api.nvim_create_autocmd("FileType", {
   group = augroup("pack_confirm_hint"),
   pattern = "nvim-pack",
-  callback = function()
-    vim.notify(
-      "确认页：:w 应用更新 · :q 放弃 · [[ / ]] 逐插件审阅",
-      vim.log.levels.INFO,
-      { title = "vim.pack" }
-    )
+  callback = function(event)
+    local buf = event.buf
+    local hint = " vim.pack 确认页：:w 应用更新 · :q 放弃 · [[ / ]] 逐插件审阅"
+    pcall(function()
+      vim.bo[buf].modifiable = true
+      vim.api.nvim_buf_set_lines(buf, 0, 0, false, { hint })
+      vim.bo[buf].modifiable = false
+      vim.bo[buf].modified = false
+      -- 整行高亮使其在确认页中醒目
+      vim.api.nvim_buf_set_extmark(buf, pack_hint_ns, 0, 0, {
+        line_hl_group = "MoreMsg",
+      })
+    end)
   end,
 })
