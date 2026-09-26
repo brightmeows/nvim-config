@@ -67,3 +67,9 @@ require("config.keymaps")
 -- root.setup 注册根目录缓存失效 autocmd。
 require("meow.format").setup()
 require("meow.root").setup()
+
+-- Omarchy 主题耦合（行为源：原 lua/plugins/theme.lua symlink +
+-- omarchy-theme-hotreload.lua）：启动时应用当前主题（上游 spec 存在时
+-- 覆盖 colorscheme.lua 的静态回退），随后 watch 父目录实现热重载。
+require("meow.theme").load()
+require("meow.theme").watch()
