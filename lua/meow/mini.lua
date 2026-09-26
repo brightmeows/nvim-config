@@ -1,4 +1,4 @@
-local LazyVim = require("meow") -- 行为源：LazyVim util/mini.lua
+local _LazyVim = require("meow") -- 行为源：LazyVim util/mini.lua
 ---@class lazyvim.util.mini
 local M = {}
 

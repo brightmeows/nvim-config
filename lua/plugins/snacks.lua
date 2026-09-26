@@ -2,8 +2,6 @@
 -- 行为源：LazyVim plugins/init.lua + plugins/util.lua + plugins/ui.lua + extras/editor/snacks_picker.lua
 -- 的 snacks opts 合并，叠加基线覆盖（scroll 动画关闭）。
 -- 无 lazy 事件，全部在启动时 setup（vim.pack 语义）。
-local M = {}
-
 local opts = {
   bigfile = { enabled = true },
   quickfile = { enabled = true },
@@ -81,8 +79,8 @@ local opts = {
   -- LazyVim 用 options.lua 的 %!v:lua 表达式接管 statuscolumn，禁用 snacks 自设
   statuscolumn = { enabled = false },
   toggle = {
-    map = function(modes, lhs, rhs, opts)
-      require("meow").safe_keymap_set(modes, lhs, rhs, opts)
+    map = function(modes, lhs, rhs, mapopts)
+      require("meow").safe_keymap_set(modes, lhs, rhs, mapopts)
     end,
   },
   words = { enabled = true },
@@ -118,8 +116,8 @@ local opts = {
   -- dashboard（ui.lua + snacks_picker extra 的 Projects 项）
   dashboard = {
     preset = {
-      pick = function(cmd, opts)
-        return require("meow.pick")(cmd, opts)()
+      pick = function(cmd, pickopts)
+        return require("meow.pick")(cmd, pickopts)()
       end,
       header = [[
           ██╗      █████╗ ███████╗██╗   ██╗██╗   ██╗██╗███╗   ███╗          Z

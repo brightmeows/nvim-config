@@ -32,7 +32,7 @@ return {
     })
 
     -- LazyVim ui.lua 的 noice keymaps
-    local function ncmd(name, desc)
+    local function ncmd(name, _desc)
       return function()
         require("noice").cmd(name)
       end

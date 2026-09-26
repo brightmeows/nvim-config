@@ -69,6 +69,7 @@ function M.detectors.pattern(buf, patterns)
 end
 
 function M.bufpath(buf)
+  -- selene: allow(incorrect_standard_library_use)
   return M.realpath(vim.api.nvim_buf_get_name(assert(buf)))
 end
 
@@ -199,8 +200,8 @@ function M.git()
   return ret
 end
 
----@param opts? {hl_last?: string}
-function M.pretty_path(opts)
+---@param _opts? {hl_last?: string}
+function M.pretty_path(_opts)
   return ""
 end
 

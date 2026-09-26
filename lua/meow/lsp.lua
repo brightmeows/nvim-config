@@ -19,14 +19,14 @@ function M.formatter(opts)
     sources = function(buf)
       local clients = vim.lsp.get_clients(LazyVim.merge({}, filter, { bufnr = buf }))
       ---@param client vim.lsp.Client
-      local ret = vim.tbl_filter(function(client)
+      local filtered = vim.tbl_filter(function(client)
         return client:supports_method("textDocument/formatting")
           or client:supports_method("textDocument/rangeFormatting")
       end, clients)
       ---@param client vim.lsp.Client
       return vim.tbl_map(function(client)
         return client.name
-      end, ret)
+      end, filtered)
     end,
   }
   return LazyVim.merge(ret, opts) --[[@as LazyFormatter]]

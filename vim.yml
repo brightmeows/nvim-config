@@ -8,6 +8,9 @@ globals:
     # snacks.nvim 在 require("snacks") 时建立的全局
     Snacks:
         any: true
+    # lua51 std 未收录 package.config（lua52+ 才有），此处声明以通过 std 类型检查
+    package.config:
+        any: true
     # bufferline.nvim 定义的 tabline 刷新入口（lua/bufferline.lua:98 _G.nvim_bufferline）
     nvim_bufferline:
         args: []

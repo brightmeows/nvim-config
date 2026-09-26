@@ -22,11 +22,13 @@ local SPEC_PATH = OMARCHY_STATE .. "/theme/neovim.lua"
 local TRANSPARENCY = vim.fn.stdpath("config") .. "/plugin/after/transparency.lua"
 
 -- watcher 状态（挂 _G 防模块重载时句柄泄漏——aether 同款教训）
+-- selene: allow(global_usage)
 local state = _G.__meow_theme_watch or {
   handle = nil,
   timer = nil,
   rearm_timer = nil,
 }
+-- selene: allow(global_usage)
 _G.__meow_theme_watch = state
 
 --- 从上游 spec 提取主题插件列表与 colorscheme 名。
@@ -40,9 +42,7 @@ local function parse(spec)
     if type(item) == "table" then
       if item.opts and item.opts.colorscheme then
         colorscheme = item.opts.colorscheme
-      elseif item[1] then
-        theme_specs[#theme_specs + 1] = item
-      elseif item.src then
+      elseif item[1] or item.src then
         theme_specs[#theme_specs + 1] = item
       else
         error(
