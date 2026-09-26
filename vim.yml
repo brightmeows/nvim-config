@@ -1,0 +1,13 @@
+---
+# Neovim / 插件生态全局的 selene 标准库定义（std = "lua51+vim" 中的 +vim）。
+# 结构参考 mason.nvim 的 vim.yml，仅收录本仓库代码实际引用的全局。
+globals:
+    # Neovim 全局命名空间
+    vim:
+        any: true
+    # snacks.nvim 在 require("snacks") 时建立的全局
+    Snacks:
+        any: true
+    # bufferline.nvim 定义的 tabline 刷新入口（lua/bufferline.lua:98 _G.nvim_bufferline）
+    nvim_bufferline:
+        args: []

@@ -1,0 +1,6 @@
+std = "lua51+vim"
+
+[rules]
+# 插件 spec / keys 条目的 array+dict 混合表是生态固有写法（which-key、
+# vim.keymap.set 等），结构非缺陷，改写只会损可读性，故豁免该规则。
+mixed_table = "allow"
