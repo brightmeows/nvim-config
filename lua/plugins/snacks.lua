@@ -139,7 +139,13 @@ local opts = {
             { icon = " ", key = "c", desc = "Config", action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})" },
             { icon = " ", key = "s", desc = "Restore Session", section = "session" },
             { icon = " ", key = "p", desc = "Projects", action = ":lua Snacks.picker.projects()" },
-          { icon = "󰒲 ", key = "l", desc = "Update Plugins", action = ":lua vim.pack.update()" },
+          { icon = "󰒲 ", key = "l", desc = "Update Plugins", action = function()
+            -- 下载阶段无内建可见反馈（进度只进 messages 且被 dashboard
+            -- 盖住），先给出即时提示避免“按下无反应”观感；确认页打开后
+            -- 由 config/autocmds.lua 的 nvim-pack FileType 提示操作方式。
+            vim.notify("检查插件更新中…稍后打开确认页", vim.log.levels.INFO, { title = "vim.pack" })
+            vim.pack.update()
+          end },
             { icon = " ", key = "q", desc = "Quit", action = ":qa" },
       },
     },
