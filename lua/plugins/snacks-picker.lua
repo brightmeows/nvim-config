@@ -7,6 +7,18 @@ return {
   -- 此文件只注册键位，不重复 setup。
   config = function()
     local pick = require("meow.pick")
+    -- 注册 picker（行为源：snacks_picker extra 的 LazyVim.pick.register 调用）
+    pick.register({
+      name = "snacks",
+      commands = {
+        files = "files",
+        live_grep = "grep",
+        oldfiles = "recent",
+      },
+      open = function(source, opts)
+        return Snacks.picker.pick(source, opts)
+      end,
+    })
     local function map(lhs, rhs, desc, mode)
       vim.keymap.set(mode or "n", lhs, rhs, { desc = desc, silent = true })
     end

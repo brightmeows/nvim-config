@@ -114,8 +114,9 @@ map("n", "<leader>xq", function()
   end
 end, { desc = "Quickfix List" })
 
-map("n", "[q", vim.cmd.cprev, { desc = "Previous Quickfix" })
-map("n", "]q", vim.cmd.cnext, { desc = "Next Quickfix" })
+-- [q/]q 原在此处（vim.cmd.cprev/cnext）；基线真值为 trouble 版本
+-- （desc "Previous Trouble/Quickfix Item"，含 is_open 分支），已由
+-- lua/plugins/trouble.lua 注册，此处不再覆盖。
 
 -- formatting
 map({ "n", "x" }, "<leader>cf", function()

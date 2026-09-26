@@ -111,7 +111,7 @@ function M.build(cb)
         lines[#lines + 1] = "Install a C compiler with `winget install --id=BrechtSanders.WinLibs.POSIX.UCRT -e`"
       end
       vim.list_extend(lines, err and { "", err } or {})
-      LazyVim.error(lines, { title = "LazyVim Treesitter" })
+      LazyVim.error(lines, { title = "nvim-treesitter" })
     end
   end)
 end

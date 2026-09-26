@@ -61,3 +61,9 @@ end
 
 require("config.autocmds")
 require("config.keymaps")
+
+-- LazyVim 在 VeryLazy 阶段调用的 setup（行为源：config/init.lua:197-199）：
+-- format.setup 注册 BufWritePre 自动格式化与 :LazyFormat 命令；
+-- root.setup 注册根目录缓存失效 autocmd。
+require("meow.format").setup()
+require("meow.root").setup()
