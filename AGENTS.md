@@ -18,7 +18,7 @@
 
 ## 验证命令
 
-仓库根执行，命令串与 `.githooks/pre-commit`、`.github/workflows/ci.yml` 同源：
+仓库根执行，命令串与 `.pre-commit-config.yaml`、`.github/workflows/ci.yml` 同源：
 
 ```bash
 stylua --check .                    # 格式（工具安装见 README“本地检查”节）
@@ -32,7 +32,7 @@ headless 启动 smoke，判据为退出码 0 且输出不含 `Error`（允许 wa
 nvim --headless -c 'lua vim.wait(2000, function() return false end, 50)' -c 'qa!'
 ```
 
-提交 hook 启用一次即可（`git config core.hooksPath .githooks`）；未启用时提交前
+提交钩子启用一次即可（`pre-commit install`）；未启用时提交前
 显式跑上述检查。
 
 ## 提交规范
