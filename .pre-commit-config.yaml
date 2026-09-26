@@ -1,0 +1,23 @@
+# 本地钩子定义：pre-commit 框架 + repo: local 全本地脚本。
+# 行为与原 .githooks/pre-commit 一比一：两条命令原样、每次提交都跑（always_run）、
+# 全仓检查（pass_filenames: false，不按暂存文件分片）、stylua 先 selene 后短路。
+# 命令串与 .github/workflows/ci.yml 的 lint job 同源（CI 跑 pre-commit run --all-files）。
+# language: system：全部调本机 PATH 二进制，无上游钩子仓库、无网络、无环境预热。
+# fail_fast：对齐原 set -e 短路语义——首钩失败即中止、后续不跑
+# （pre-commit 默认会跑完全部钩子再汇总，此项是 1:1 复刻的关键）。
+fail_fast: true
+repos:
+  - repo: local
+    hooks:
+      - id: stylua
+        name: stylua --check .
+        entry: stylua --check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: selene
+        name: selene lua init.lua plugin scripts
+        entry: selene lua init.lua plugin scripts
+        language: system
+        pass_filenames: false
+        always_run: true
