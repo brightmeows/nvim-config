@@ -177,8 +177,8 @@
 
 - [x] 本地 `stylua --check` 全过
 - [x] 本地 `selene` 全过（存量告警 322→0：规则级豁免仅 `mixed_table`，另 3 处定点内联 allow：`_G` 持久化×2、`assert(buf)`）
-- [x] `.githooks/pre-commit` 安装并拦截过一次故意错误
-- [x] CI 全绿（run 36254098430）：lint（stylua+selene，与 hook 同源）、headless smoke（ubuntu/macos/windows 矩阵，判据为退出码 0 且无 Error）、lockfile 全新安装测试
+- [x] pre-commit 钩子（迁移自 `.githooks`，行为一比一）安装并拦截过一次故意错误：拦截、放行、`fail_fast` 短路三态均实测（pre-commit 默认跑完全部钩子，短路语义靠 `fail_fast: true` 补齐）；定义见 `.pre-commit-config.yaml`
+- [x] CI 全绿（run 36258848127）：lint（`pre-commit run --all-files`，与本地钩子同源）、headless smoke（ubuntu/macos/windows 矩阵，判据为退出码 0 且无 Error）、lockfile 全新安装测试
 - [x] lockfile 测试未降级：无缓存全新安装与逐 rev 校验完整通过，无确认提示阻塞（init.lua confirm=false 设计生效）
 
 ## 十三、清理与交付
