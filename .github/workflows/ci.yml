@@ -9,7 +9,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install stylua v2.5.2
         run: |
           mkdir -p "$HOME/.local/bin"
@@ -39,7 +39,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: rhysd/action-setup-vim@v1
         with:
           version: stable
@@ -55,13 +55,13 @@ jobs:
           test -f "$cfg/init.lua" && echo "config in place: $cfg"
       - name: Cache plugins (unix)
         if: runner.os != 'Windows'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/share/nvim
           key: nvim-plugins-${{ runner.os }}-${{ hashFiles('nvim-pack-lock.json') }}
       - name: Cache plugins (windows)
         if: runner.os == 'Windows'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/AppData/Local/nvim-data
           key: nvim-plugins-${{ runner.os }}-${{ hashFiles('nvim-pack-lock.json') }}
@@ -93,7 +93,7 @@ jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: rhysd/action-setup-vim@v1
         with:
           version: stable
