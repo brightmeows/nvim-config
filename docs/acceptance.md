@@ -13,7 +13,7 @@
 
 - [ ] `nvim --headless -c qa` 退出码 0，无错误输出
 - [ ] 启动无 lazy.nvim / LazyVim 相关报错、无 NEWS 提示
-- [ ] `vim.pack` 插件清单与 `nvim-pack-lock.json` 一致（CI lockfile 测试覆盖）
+- [x] `vim.pack` 插件清单与 `nvim-pack-lock.json` 一致（CI lockfile 测试覆盖：首绿 run 36254098430，无缓存全新安装 49/49 逐 rev 匹配）
 - [ ] `:Lazy` 无此命令属预期；等效入口见 keymaps 节 `<leader>l` 项
 - [ ] LazyFile 懒加载语义消失（原事件组 `BufReadPost/BufNewFile/BufWritePre`，vim.pack 全量加载）：
   验证打开新文件/新 buffer 时 gitsigns、trouble、todo-comments 等原 LazyFile 件行为不回归
@@ -121,7 +121,7 @@
 - [x] 启动 dashboard（snacks dashboard）：预设头图与按键项 `f/n/g/r/c/s/p/l/q` 可用；
   逐项定案：`x`（`:LazyExtras`）移除（extras 概念随发行版消失，无等效物）、
   `l`（`:Lazy`）改为 `vim.pack.update()`、`p`（Projects，snacks_picker extra 原有项）保留。
-  startup 页脚（"Neovim loaded X/Y plugins in Zms"）依赖 lazy.stats——以 init.lua
+  startup 页脚（“Neovim loaded X/Y plugins in Zms”）依赖 lazy.stats——以 init.lua
   顶部的兼容垫片提供等效数据（count/loaded 取 vim.pack 托管数、startuptime
   VimEnter 固化）。
   验证：伪 TUI（script 分配 PTY）两次实测 dashboard 打开、无 UIEnter/lazy.stats
@@ -175,11 +175,11 @@
 
 ## 十二、质量闸门（步骤 7 落地后核对）
 
-- [ ] 本地 `stylua --check` 全过
-- [ ] 本地 `selene` 全过（存量告警清零）
-- [ ] `.githooks/pre-commit` 安装并拦截过一次故意错误
-- [ ] CI 四 job 全绿：stylua、selene、headless smoke、lockfile 全新安装测试
-- [ ] lockfile 测试若因 headless 确认提示阻塞而降级为 smoke，须在 PR/提交信息中如实记录
+- [x] 本地 `stylua --check` 全过
+- [x] 本地 `selene` 全过（存量告警 322→0：规则级豁免仅 `mixed_table`，另 3 处定点内联 allow：`_G` 持久化×2、`assert(buf)`）
+- [x] `.githooks/pre-commit` 安装并拦截过一次故意错误
+- [x] CI 全绿（run 36254098430）：lint（stylua+selene，与 hook 同源）、headless smoke（ubuntu/macos/windows 矩阵，判据为退出码 0 且无 Error）、lockfile 全新安装测试
+- [x] lockfile 测试未降级：无缓存全新安装与逐 rev 校验完整通过，无确认提示阻塞（init.lua confirm=false 设计生效）
 
 ## 十三、清理与交付
 
