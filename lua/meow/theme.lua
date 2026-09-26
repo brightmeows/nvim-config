@@ -211,6 +211,10 @@ local function on_event(err, filename, _)
   end
 end
 
+--- 连续 start 失败上限：目录永久缺失（非 Omarchy 机器，多平台常态）达限即
+--- 放弃，不再每 2s 空转；上限内的重试仍用于容忍切主题 rm -rf 间隙。
+M.MAX_START_FAILURES = 3
+
 --- watch 父目录 current/（theme 子项的 rm -rf+mv 替换在其下产生事件）。
 function M.watch()
   if state.handle then
@@ -226,6 +230,12 @@ function M.watch()
     pcall(function()
       handle:close()
     end)
+
+    -- 连续失败达上限：静默放弃（启动期 load() 已兜底应用主题，仅热重载失效）
+    state.failures = (state.failures or 0) + 1
+    if state.failures >= M.MAX_START_FAILURES then
+      return
+    end
 
     -- current/ 可能短暂不存在（rm -rf 间隙）：延时重挂
     if not state.rearm_timer then
@@ -243,6 +253,7 @@ function M.watch()
     end
     return
   end
+  state.failures = 0
   state.handle = handle
 end
 
