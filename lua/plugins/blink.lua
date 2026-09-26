@@ -85,6 +85,12 @@ return {
         }
       end
 
+      -- compat 是 LazyVim 的扩展字段（blink.compat 源适配），非 blink schema
+      -- 成员——setup 前必须清掉才能过校验（基线同款：
+      -- "Unset custom prop to pass blink.cmp validation"）。本配置无 compat
+      -- 源，保留字段仅为结构与基线一致。
+      opts.sources.compat = nil
+
       require("blink.cmp").setup(opts)
     end,
   },
