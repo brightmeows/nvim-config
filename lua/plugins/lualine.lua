@@ -59,6 +59,18 @@ return {
             cond = function() return package.loaded["dap"] and require("dap").status() ~= "" end,
             color = function() return { fg = Snacks.util.color("Debug") } end,
           },
+          -- 更新计数（基线 lazy.status 组件的等效复刻，数据来自 meow.packcheck）
+          {
+            function()
+              return require("meow.packcheck").status()
+            end,
+            cond = function()
+              return require("meow.packcheck").has_updates()
+            end,
+            color = function()
+              return { fg = Snacks.util.color("Special") }
+            end,
+          },
           {
             "diff",
             symbols = {

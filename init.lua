@@ -100,6 +100,10 @@ require("config.keymaps")
 require("meow.format").setup()
 require("meow.root").setup()
 
+-- 插件更新后台检查（基线 lazy checker 闭环的等效复刻：每小时检查、
+-- 仅经 lualine 计数呈现不发通知；打开更新列表用 dashboard l 或 <leader>l）
+require("meow.packcheck").start()
+
 -- Omarchy 主题耦合（行为源：原 lua/plugins/theme.lua symlink +
 -- omarchy-theme-hotreload.lua）：启动时应用当前主题（上游 spec 存在时
 -- 覆盖 colorscheme.lua 的静态回退），随后 watch 父目录实现热重载。

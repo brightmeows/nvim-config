@@ -113,7 +113,10 @@
 
 ## 八、UI 组件
 
-- [ ] lualine 状态栏（含 trouble 文档符号集成 `vim.g.trouble_lualine`）
+- [ ] lualine 状态栏（含 trouble 文档符号集成 `vim.g.trouble_lualine`；
+  更新计数组件 `  N`——基线 lazy.status/checker 闭环的等效复刻，
+  meow.packcheck 每小时后台检查、notify=false 仅经 lualine 呈现，
+  实测 49 件 18s 查毕 count=15 与上游真实待更新数吻合，钉 tag 件不误报）
 - [ ] bufferline tabline（`<S-h>/<S-l>` 切换、分隔符与主题适配；`<leader>bp/bP/br/bl/bj` pin 与分组操作）
 - [x] 启动 dashboard（snacks dashboard）：预设头图与按键项 `f/n/g/r/c/s/p/l/q` 可用；
   逐项定案：`x`（`:LazyExtras`）移除（extras 概念随发行版消失，无等效物）、
