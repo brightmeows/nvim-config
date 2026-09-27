@@ -63,27 +63,27 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.local/share/nvim
-          key: nvim-plugins-${{ runner.os }}-${{ hashFiles('nvim-pack-lock.json') }}
+          key: nvim-plugins-${{ runner.os }}-${{ hashFiles('lazy-lock.json') }}
       - name: Cache plugins (windows)
         if: runner.os == 'Windows'
         uses: actions/cache@v6
         with:
           path: ~/AppData/Local/nvim-data
-          key: nvim-plugins-${{ runner.os }}-${{ hashFiles('nvim-pack-lock.json') }}
+          key: nvim-plugins-${{ runner.os }}-${{ hashFiles('lazy-lock.json') }}
       - name: Install plugins per lockfile
         run: >-
           nvim --headless
-          -c 'lua local N=vim.tbl_count(vim.json.decode(table.concat(vim.fn.readfile("nvim-pack-lock.json"),"\n")).plugins);
-          local opt=vim.fs.joinpath(vim.fn.stdpath("data"),"site","pack","core","opt");
+          -c 'lua local N=vim.tbl_count(vim.json.decode(table.concat(vim.fn.readfile("lazy-lock.json"),"\n")));
+          local opt=vim.fs.joinpath(vim.fn.stdpath("data"),"lazy");
           vim.fn.mkdir(opt,"p");
           local function cnt() local c=0 for _ in vim.fs.dir(opt) do c=c+1 end return c end;
           vim.wait(300000, function() return cnt()>=N end, 500);
           if cnt()<N then io.stderr:write(("INSTALL-INCOMPLETE %d/%d\n"):format(cnt(),N)); vim.cmd("cquit 1") end'
           -c 'qa!'
-      - name: "Smoke judged: exit 0 and no Error (允许 warning)"
+      - name: "Strong smoke judged: exit 0 and no Error (允许 warning)"
         run: |
           code=0
-          nvim --headless -c 'lua vim.wait(2000, function() return false end, 50)' -c 'qa!' > smoke.log 2>&1 || code=$?
+          nvim --headless -c 'luafile scripts/strong-smoke.lua' -c 'qa!' > smoke.log 2>&1 || code=$?
           cat smoke.log
           if [ "$code" -ne 0 ]; then
             echo "::error::nvim exited with code $code"
@@ -93,7 +93,7 @@ jobs:
             echo "::error::Error detected in startup output"
             exit 1
           fi
-          echo "smoke OK"
+          echo "strong smoke OK"
 
   lockfile:
     runs-on: ubuntu-latest
@@ -115,8 +115,8 @@ jobs:
       - name: Fresh install per lockfile (无缓存)
         run: >-
           nvim --headless
-          -c 'lua local N=vim.tbl_count(vim.json.decode(table.concat(vim.fn.readfile("nvim-pack-lock.json"),"\n")).plugins);
-          local opt=vim.fs.joinpath(vim.fn.stdpath("data"),"site","pack","core","opt");
+          -c 'lua local N=vim.tbl_count(vim.json.decode(table.concat(vim.fn.readfile("lazy-lock.json"),"\n")));
+          local opt=vim.fs.joinpath(vim.fn.stdpath("data"),"lazy");
           vim.fn.mkdir(opt,"p");
           local function cnt() local c=0 for _ in vim.fs.dir(opt) do c=c+1 end return c end;
           vim.wait(300000, function() return cnt()>=N end, 500);
