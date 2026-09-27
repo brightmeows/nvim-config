@@ -26,10 +26,11 @@ selene lua init.lua plugin scripts  # 静态检查（std 配置：selene.toml / 
 nvim -l scripts/verify-lockfile.lua # 锁文件与盘上插件 git HEAD 一致性
 ```
 
-headless 启动 smoke，判据为退出码 0 且输出不含 `Error`（允许 warning）：
+headless 强测 smoke（与 CI smoke 步骤同源），判据为退出码 0 且输出不含 `Error`
+（允许 warning）——事件触发加程序化补载，拉起全部插件后判定：
 
 ```bash
-nvim --headless -c 'lua vim.wait(2000, function() return false end, 50)' -c 'qa!'
+nvim --headless -c 'luafile scripts/strong-smoke.lua' -c 'qa!'
 ```
 
 提交钩子启用一次即可（`pre-commit install`）；未启用时提交前
@@ -43,5 +44,6 @@ chore 不同 type 分开提交。
 
 ## 结构
 
-文件地图见 README“结构”节。插件版本锁在 `nvim-pack-lock.json`：更新走
-`vim.pack.update()`，锁文件变更随插件变更一并提交。
+文件地图见 README“结构”节。插件版本锁在 `lazy-lock.json`：更新走
+`:Lazy update`（或 dashboard `l`、`<leader>l`），锁文件变更随插件变更一并提交；
+他机拉取后的版本错位由启动对齐守卫提示 `:Lazy restore`。

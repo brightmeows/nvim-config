@@ -1,191 +1,195 @@
-# 迁移验收清单：LazyVim → 纯 vim.pack
+# 验收清单：vim.pack → lazy.nvim 切换
 
-逐项核对迁移前（基线 `e6b27cf`，LazyVim 16.0.0 + 51 锁定插件）与迁移后的行为差异。
-每项须判定为“一致”方可打勾；无法一致的项须在此文档标注理由并经确认。
+逐项核对切换前（tag `vim-pack-final`，vim.pack 驱动终态）与切换后的状态。
+行为源不变，仍为 LazyVim 16.0.0：**恢复项** = 相对 vim.pack 终态回归基线语义
+（预期可见变化）；**保留差异** = 相对基线仍存在、已确认接受的偏离；行为内容
+域（选项、autocmd、键位、LSP 等）本次未改，清单项延续核对。依赖 CI 的条目以
+流水线首绿为准，不提前勾选。
 
 对照物（本机在档）：
 
-- LazyVim 源码：`~/.local/share/nvim/lazy/LazyVim/lua/lazyvim/`
-- 基线配置：`git -C ~/.config/nvim show e6b27cf`
-- 基线启动数据：见“性能”节
+- LazyVim 16.0.0 源码：`~/.local/share/nvim/lazyvim-ref/lua/lazyvim/`
+- 切换前终态：tag `vim-pack-final`（回退锚点）
+- 基线启动数据：LazyVim 16.0 + lazy.nvim 11.17.5 中位约 56ms；
+  vim.pack 终态中位约 164ms（均为本机六次 `--startuptime` 中位）
 
-## 一、启动与架构
+## 一、切换与装配
 
-- [ ] `nvim --headless -c qa` 退出码 0，无错误输出
-- [ ] 启动无 lazy.nvim / LazyVim 相关报错、无 NEWS 提示
-- [x] `vim.pack` 插件清单与 `nvim-pack-lock.json` 一致（CI lockfile 测试覆盖：首绿 run 36254098430，无缓存全新安装 49/49 逐 rev 匹配）
-- [ ] `:Lazy` 无此命令属预期；等效入口见 keymaps 节 `<leader>l` 项
-- [ ] LazyFile 懒加载语义消失（原事件组 `BufReadPost/BufNewFile/BufWritePre`，vim.pack 全量加载）：
-  验证打开新文件/新 buffer 时 gitsigns、trouble、todo-comments 等原 LazyFile 件行为不回归
+- [x] `nvim --headless` 退出码 0、输出无 Error（弱 smoke 与强测各一次）
+- [x] lazy spec 50 件（49 插件 + lazy.nvim）全部识别，lazy 根无游离目录
+- [x] 启动即应用当前主题（经上游 spec 注入与 ColorSchemePre 加载，colors_name = catppuccin-mocha）
+- [x] 无 vim.pack 残留（`rg 'vim.pack|nvim-pack'` 对 lua/init/plugin/scripts 清零；
+  nvim-pack-lock.json 与 packcheck 已随切换批次删除）
+- [ ] CI lint / 三平台强测 / lockfile 全新安装三绿（推送后按流水线首绿勾选）
+- [ ] 干净机器全新安装逐 rev 校验 `nvim -l scripts/verify-lockfile.lua` 50/50
+  （CI lockfile job；本机对拍已 50/50）
 
-## 二、全局选项
+## 二、懒加载恢复（恢复项，行为源 LazyVim 16.0 触发映射）
 
-来源：LazyVim `config/options.lua`（118 行）+ 基线 `lua/config/options.lua` 覆盖项。
+触发映射逐件回填：lsp 走 BufReadPre/BufNewFile，gitsigns/lint/autotag 走
+LazyFile，treesitter 走 LazyFile/VeryLazy 加 cmd，lualine/bufferline/noice/
+which-key/flash/mini 系/ts-comments/textobjects 走 VeryLazy，persistence 走
+BufReadPre，blink 走 InsertEnter/CmdlineEnter，mason/conform/trouble/grug-far/
+neo-tree/todo-comments 走 cmd 加 keys，lazydev 走 ft 加 cmd，主题件与
+colorscheme 件走 lazy=true。
+
+- [x] 强测 `scripts/strong-smoke.lua`：50/50 载入、无 Error（headless 手动触发
+  VeryLazy/LazyFile/文件事件 + 程序化补载双保险）
+- [x] `<leader>l` = `:Lazy`（desc "Lazy"，基线原样）；dashboard `l` = `:Lazy`
+- [x] `[q`/`]q` = trouble 版本（safe_keymap_set 探测到 keys handler 后跳过，
+  与基线同机制）
+- [x] `<S-h>` = bufferline 版本（keys handler 生效，基线同机制；vim.pack 终态
+  为 keymaps 的 bprevious，属恢复项）
+- [x] VeryLazy 链路：keymaps/autocmds/format/root setup 于 VeryLazy 执行
+  （`:LazyFormat` 存在、formatter 已注册）
+- [x] 键位抽查齐全：`<leader>xx / sr / qs / fe / , / ?`
+- [x] mason 的 cmd/keys/build 与安装后 FileType 重触发恢复；mason-lspconfig
+  以依赖占位空 config 形态回归（LazyVim 同构）
+- [ ] 打开文件触发 BufReadPre 链（lsp、mason 随依赖加载）与 LazyFile 链
+  （gitsigns 行标记、lint、autotag）实操无回归
+- [ ] 事件件实操：lualine/bufferline 在 VeryLazy 后出现、`:Mason`、`:ConformInfo`、
+  `<leader>cF`、neo-tree 目录参数启动、`<leader>qs` 会话恢复
+- [ ] blink 仅在插入/命令行进入时加载（首键输入无报错）
+
+## 三、主题与 Omarchy 耦合
+
+- [x] 热重载：running 实例切 Gruvbox 后 6.1s 跟随、切回 Catppuccin 后 13.8s
+  跟随，两程 Normal 背景保持透明（透明度重放生效）；切回后新实例启动主题正确
+- [x] 断言兜底：破坏上游 spec 启动报错可见（messages 含解析失败全文），并按
+  静态回退应用 catppuccin（与切换前失败分支行为一致）
+- [x] 缺件策略：上游 spec 指向未预装插件时，启动注入报错、条目跳过、不触发
+  安装（lazy 根无该目录）；热重载路径同口径报错
+- [x] 注入条目与 themes.lua/colorscheme.lua 预装集按 URL 对齐（rose-pine/
+  aether/catppuccin 特例 name/branch 保留）
+
+## 四、锁、多机与对齐守卫
+
+- [x] `lazy-lock.json` 50 条（49 插件按切换前 rev + lazy.nvim 85c7ff3），本地
+  `nvim -l scripts/verify-lockfile.lua` 逐件 HEAD 全等
+- [x] 对齐守卫：人为把锁改错 1 件后启动，WARN 提示“盘上/锁不一致，执行
+  :Lazy restore”可见；还原后一轮静默通过
+- [x] 新机/首启按锁装齐的机制核对（lazy 启动安装带 lockfile=true，
+  lazy 源码 loader.lua:84）
+- [ ] 第二台机器实拉演练：拉取 → 守卫提示 → `:Lazy restore` → 复检静默
+
+## 五、性能
+
+- [x] 切换后本机六次 `--startuptime` 中位 **33.3ms**（28.9 / 30.0 / 31.8 /
+  34.7 / 34.9 / 45.6），低于 100ms 门槛，优于基线 56ms 与 vim.pack 终态 164ms
+- [x] dashboard 页脚为原生 lazy.stats：伪 TUI（80x35）实测
+  “Neovim loaded 3/50 plugins in 35.13ms”
+
+## 六、UI 与 dashboard（伪 TUI 实测）
+
+- [x] dashboard 九键齐全（f/n/g/r/c/s/p/l/q），头图完整，`q` 退出码 0
+- [x] `:Lazy` 命令存在；UI 打开实操一次后再勾详情
+- [ ] `:Lazy` 更新流程实操（update 审阅与锁文件回写）
+
+## 七、质量闸门
+
+- [x] `pre-commit run --all-files`（stylua + selene）全绿、0 告警
+- [ ] CI 全绿：lint、三平台强测 smoke、lockfile 全新安装（首绿后勾）
+
+## 八、全局选项
+
+来源：LazyVim `config/options.lua` + 基线覆盖项。本次未改，延续核对：
 
 - [ ] `mapleader = " "`、`maplocalleader = "\"`
-- [ ] `autoformat = false`（基线覆盖项，保存不自动格式化）
-- [ ] `relativenumber = false`（基线覆盖项）
-- [ ] remote_clipboard 在 options 加载早期生效（`vim.g.clipboard` 设定）
-- [ ] 基线选项全表逐项一致：`autowrite`、`clipboard`（SSH 时空）、`completeopt`、
-  `conceallevel=2`、`confirm`、`cursorline`、`expandtab`、`fillchars`、`foldlevel=99`、
-  `foldmethod=indent`、`grepformat`/`grepprg=rg`、`ignorecase`、`inccommand`、
-  `laststatus=3`、`linebreak`、`list`、`number`、`pumheight=10`、`scrolloff=4`、
-  `sessionoptions`、`shiftwidth=2`、`showmode=false`、`sidescrolloff=8`、
-  `signcolumn=yes`、`smartcase`、`smartindent`、`smoothscroll`、`splitbelow/right`、
-  `tabstop=2`、`termguicolors`、`timeoutlen=300`、`undofile`、`undolevels=10000`、
-  `updatetime=200`、`virtualedit=block`、`wrap=false` 等（完整清单以基线文件为准）
-- [ ] `statuscolumn` 与 `formatexpr` 的 LazyVim 函数依赖已替换为等效实现或移除且无报错
-- [ ] snacks scroll 动画关闭（基线覆盖件 `snacks-animated-scrolling-off.lua`：`opts.scroll.enabled = false`；仅禁滚动动画，非全局 animate 开关）
+- [ ] `autoformat = false`、`relativenumber = false`
+- [ ] remote_clipboard 在 options 加载早期生效（`vim.g.clipboard`）
+- [ ] 基线选项全表逐项一致（`autowrite`、`clipboard`、`completeopt`、
+  `conceallevel=2`、`cursorline`、`fillchars`、`foldlevel=99`、`grep` 走 `rg`、
+  `laststatus=3`、`sessionoptions`、`timeoutlen=300`、`undofile`、`updatetime=200`、
+  `wrap=false` 等，完整清单以 `lua/config/options.lua` 为准）
+- [ ] `statuscolumn` 与 `formatexpr` 走 meow 层（conform 按 spec 存在性选路）
+- [ ] snacks scroll 动画关闭
 
-## 三、自动命令
+## 九、自动命令
 
-来源：LazyVim `config/autocmds.lua`（131 行）。
+来源：LazyVim `config/autocmds.lua`；加载时机为 argc>0 早加载、否则 VeryLazy
+（本次恢复的时序）。
 
-- [ ] checktime（FocusGained/TermClose/TermLeave）
-- [ ] highlight on yank（TextYankPost）
-- [ ] VimResized 自动等分窗口
+- [ ] checktime、highlight on yank、VimResized 等分
 - [ ] BufReadPost 回到最后编辑位置（gitcommit 除外）
-- [ ] 关闭类 filetype 用 `q` 退出（help、qf、notify、checkhealth 等清单）
-- [ ] man 文件不入 buffer 列表
-- [ ] text/markdown/gitcommit 自动 wrap + spell
-- [ ] json/jsonc conceallevel=0
+- [ ] 关闭类 filetype 用 `q` 退出；man 文件不入 buffer 列表
+- [ ] text/markdown/gitcommit 自动 wrap + spell；json/jsonc conceallevel=0
 - [ ] BufWritePre 自动创建父目录
+- [x] vim.pack 确认页提示 autocmd 已随切换删除
 
-## 四、Keymaps
+## 十、Keymaps
 
-来源：LazyVim `config/keymaps.lua`（215 行）+ `plugins/extras/editor/snacks_picker.lua` + `plugins/editor.lua` + `plugins/extras/editor/neo-tree.lua`。
-以下按域分组，组内逐键核对（键位、模式、行为、desc）。
+来源：LazyVim `config/keymaps.lua` + extras；本次仅改加载时机与时序机制，
+键位内容未改。
 
-- [ ] 方向键 `gj`/`gk` 修正、`<C-hjkl>` 窗口导航、`<C-Up/Down/Left/Right>` 调整窗口
-- [ ] `<A-j/k>` 移动行（n/i/v 三模式）、`<S-h/l>` 与 `[b/]b` 切 buffer
-- [ ] buffer 组：`<leader>bb`、`<leader>` + 反引号、`<leader>bd`、`<leader>bo`、`<leader>bi`、`<leader>bD`
-- [ ] `<esc>` 智能退出（清除搜索高亮）、`<C-s>` 保存、`<leader>K`、visual `<`/`>` 重选
-- [ ] toggle 组：`<leader>uf/uF/us/uw/uL/ud/ul/uc/uA/uT/ub/ud/ua/ug/uS/uh/uz/uZ`（snacks toggles）
-- [ ] 调试组：`<leader>dpp/dph`（profiler）
-- [ ] git 组：`<leader>gg/gG/gL/gb/gf/gl/gB/gY`
-- [ ] picker 组：`<leader>, / / : <space> n`、`fb/fB/fc/ff/fF/fg/fr/fR/fp`、
-  `gd/gD/gs/gS/gi/gI/gp/gP`、`sb/sB/sg/sG/sp/sw/sW`、`sa/sc/sC/sd/sD/sh/sH/si/sj/sk/sl/sM/sm/sr/sq/su`、`ss/sS/st/sT`、`uC`
-- [ ] neo-tree 组：`<leader>fe/fE/e/E/ge/be`
-- [ ] flash 组：`s/S/r/R`（n/x/o 模式）、`<C-s>`（命令模式 toggle）
-- [ ] trouble 组：`<leader>xx/xX/cs/cS/xL/xQ/xt/xT`、`[q/]q`
-- [ ] todo 组：`[t/]t`
-- [ ] grug-far：`<leader>sr`（n/x 模式，打开搜索替换并预填当前扩展名）
-- [ ] window 组：`<leader>-/|`、`<leader>wd`、`<leader>wm`、`<leader>uz`
-- [ ] tab 组：`<leader><tab>l/o/f/<tab>/]/d/[`
-- [ ] 杂项：`<leader>ur`、`<leader>K`、`<leader>fn`、`<leader>xl/xq`、`<leader>cf`（强制格式化）、
-  `<leader>cd`（行内诊断浮动）、`[d/]d/[e/]e/[w/]w`（诊断跳转）、
-  `<leader>qq`、`<leader>ui/uI`、`<leader>fT/ft`、`<c-/>` 终端
-- [ ] `<leader>l`：原为 `:Lazy`——迁移后改为等效插件管理入口（`vim.pack.update()` 确认缓冲），desc 同步更新
-- [ ] `<leader>L`：原为 LazyVim changelog——确认保留（打开 Neovim news）或标注移除理由
-- [ ] `<localleader>r`（lua 文件运行）
-- [ ] which-key 分组标签与基线一致（`<leader>f` = file/find、`<leader>g` = git、`<leader>s` = search、`<leader>x` = diagnostic、`<leader>u` = ui、`<leader><tab>` = tab）
-- [ ] LazyVim 专有 keymap 引用（`LazyVim.root`、`LazyVim.pick`、`Snacks.lazygit` 等）已替换为直调且行为一致
+- [x] `<leader>l` 回归 `:Lazy`；`[q`/`]q` 恢复基线行（由 safe_keymap_set
+  探测让位 trouble 版本）
+- [ ] 方向键 `gj`/`gk`、窗口导航、`<A-j/k>` 移行、buffer 组、`<esc>` 智能退出
+- [ ] toggle 组 `<leader>u*`、git 组 `<leader>g*`、picker 组、neo-tree 组
+  `<leader>fe/fE/e/E/ge/be`、flash 组 `s/S/r/R`、trouble 组、todo 组
+- [ ] grug-far `<leader>sr`、conform `<leader>cF`、mason `<leader>cm`
+- [ ] which-key 分组标签与基线一致；`<localleader>r`、`<c-/>` 终端
+- [ ] LazyVim 专有引用（`LazyVim.*`）在 meow 命名空间等效且行为一致
 
-## 五、LSP 与补全
+## 十一、LSP 与补全
 
-- [ ] mason 管理 lua-language-server、shfmt、stylua（迁移不波及，验证 `:Mason` 可开、`lua-language-server` 可用）
-- [ ] `nvim-lspconfig` + `mason-lspconfig` 自动 enable 已装 server（lua_ls 对 `*.lua` 生效）
-- [ ] LSP keymaps（来源 `plugins/lsp/init.lua` 的 `keys` 表）：`gd/gr/gI/gy/gD`、`K/gK`、
-  插入模式 `<C-k>`、`<leader>ca/cc/cC/cR/cr/cA/cl`、`]]/[[` 与 `<a-n>/<a-p>`（words 跳转，
-  依赖 documentHighlight 能力检测）；含 `has` 条件的项在 lua_ls 下逐个确认生效
-- [ ] LSP 行为默认项：inlay hints 开启（lua_ls 支持时可见）、codelens 关、
-  folds（`vim.lsp.foldexpr`）按能力自动开、diagnostics（underline、virtual_text `●` 前缀、
-  `source=if_many`、severity_sort、signs 图标）与基线一致
-- [ ] LSP 根检测（`root_spec = { "lsp", { ".git", "lua" }, "cwd" }`）等效——snacks root 或自实现
-- [ ] blink.cmp 补全：`<C-Space>` 手动触发、Enter/Tab 确认行为与基线一致
-- [ ] friendly-snippets 片段源加载（输入 `for`/`if` 等有片段建议）
-- [ ] lazydev 对 lua 配置文件的库补全（`vim.*`、snacks 库提示）
-- [ ] 诊断显示（virtual_lines/signs 配置与基线一致，`<leader>cd` 行内诊断浮动）
+- [ ] mason 管理 lua-language-server、shfmt、stylua（首开 lua 文件后按链加载）
+- [ ] mason-lspconfig 自动 enable 已装 server（lua_ls 生效）
+- [ ] LSP 键位（`gd/gr/gI/gy/gD`、`K/gK`、`<leader>c*`、`]]/[[`、`<a-n/p>`）
+  含 `has` 条件逐个生效
+- [ ] inlay hints、diagnostics 显示与基线一致；`<leader>cd` 行内诊断浮动
+- [ ] blink `<C-Space>`、Enter/Tab 确认、friendly-snippets 片段、lazydev 库补全
 
-## 六、格式化与 Lint
+## 十二、格式化与 Lint
 
 - [ ] conform：lua → stylua、sh → shfmt、`<leader>cF` 注入格式化
-- [ ] `autoformat = false` 下保存不触发格式化；手动 `:lua vim.lsp.buf.format()` 或 `<leader>cf` 可用
-- [ ] nvim-lint：事件（BufWritePost/BufReadPost/InsertLeave）触发机制保留（基线仅配 fish，低风险）
-- [ ] `<leader>cf`（格式化入口，snacks/LazyVim format 注册等效替代）
+- [ ] `autoformat = false` 下保存不触发；`<leader>cf` 与 `:LazyFormat` 可用
+  （formatter 在 VeryLazy 注册）
+- [ ] nvim-lint 事件触发（fish 基线仅配 fish）
 
-## 七、Treesitter
+## 十三、Treesitter
 
-- [ ] nvim-treesitter main 分支安装器独立工作（不依赖插件管理器）
-- [ ] 已装 parser 列表与基线一致（迁移后 `:TSUpdate` 不报错）
-- [ ] incremental selection（`<C-CR>` 起始键）、highlight、indent 生效
-- [ ] nvim-treesitter-textobjects（mini.ai treesitter 对象依赖）、nvim-ts-autotag 生效
+- [ ] parser 列表与基线一致（`TSUpdate` 不报错）
+- [ ] highlight/indent/folds 生效；textobjects 与 autotag 生效
+- [ ] 加载时机：LazyFile/VeryLazy（含 cmd 直达 `TSUpdate` 等）
 
-## 八、UI 组件
+## 十四、UI 组件
 
-- [ ] lualine 状态栏（含 trouble 文档符号集成 `vim.g.trouble_lualine`；
-  更新计数组件 `  N`——基线 lazy.status/checker 闭环的等效复刻，
-  meow.packcheck 每小时后台检查、notify=false 仅经 lualine 呈现，
-  实测 49 件 18s 查毕 count=15 与上游真实待更新数吻合，钉 tag 件不误报）
-- [ ] bufferline tabline（`<S-h>/<S-l>` 切换、分隔符与主题适配；`<leader>bp/bP/br/bl/bj` pin 与分组操作）
-- [x] 启动 dashboard（snacks dashboard）：预设头图与按键项 `f/n/g/r/c/s/p/l/q` 可用；
-  逐项定案：`x`（`:LazyExtras`）移除（extras 概念随发行版消失，无等效物）、
-  `l`（`:Lazy`）改为 `vim.pack.update()`、`p`（Projects，snacks_picker extra 原有项）保留。
-  startup 页脚（“Neovim loaded X/Y plugins in Zms”）依赖 lazy.stats——以 init.lua
-  顶部的兼容垫片提供等效数据（count/loaded 取 vim.pack 托管数、startuptime
-  VimEnter 固化）。
-  验证：伪 TUI（script 分配 PTY）两次实测 dashboard 打开、无 UIEnter/lazy.stats
-  报错、页脚格式与基线一致（headless 无 UIEnter，此路径 CI smoke 不覆盖，
-  以本机伪 TUI 实测为准）
-- [ ] noice：`<leader>snl/snh/sna/snd/snt` 消息历史与清除、`<leader>un` 关闭全部通知
-- [ ] which-key 弹窗与分组（timeoutlen=300 下触发正常）
-- [ ] noice 消息/cmdline/命令行签名
-- [ ] snacks：notify、terminal（`<leader>fT/ft`）、indent、输入框等 setup 项与基线一致
-- [ ] gitsigns：行号栏 sign、`[h/]h/[H/]H` hunk 导航、`<leader>gb` blame 行
-- [ ] todo-comments、trouble、persistence（`<leader>qs/qS/ql/qd` 会话恢复）、ts-comments（`gc` 注释）
-- [ ] snacks 杂项：`<leader>.`（scratch 缓冲）、`<leader>S`（选 scratch）、`<leader>dps`；
-  terminal 内 `<C-hjkl>` 窗口导航与 `<C-/>` 隐藏
-- [ ] mini.pairs（自动配对）、mini.ai（`af/if` 等对象扩展）、mini.icons（图标）
-- [ ] neo-tree 文件树：`<leader>e` 打开、git_status/buffers 源、`l/h` 导航、`Y/O/P` 映射
-- [ ] snacks picker：`<leader>ff` 文件查找、`<leader>/` grep（root 感知基于 root 检测）
-- [ ] flash 跳转：`s` 跳转、`S` treesitter 范围跳转
+- [ ] lualine：状态栏在 VeryLazy 后出现（init 的 laststatus 时序恢复）、
+  更新计数走 `lazy.status`（checker notify=false 只呈现不通知）、trouble 文档符号
+- [ ] bufferline VeryLazy + keys 触发；catppuccin 集成经 specs 段合并
+- [ ] noice/which-key/gitsigns/todo-comments/persistence/ts-comments/mini 系
+  （对照各自触发件实操）
+- [ ] snacks：notify、terminal、indent、toggle 与基线一致
+- [ ] neo-tree：`<leader>e` 打开、三源、`l/h`、`Y/O/P`
+- [ ] 启动 dashboard（见第六节）
 
-## 九、主题与 Omarchy 耦合
+## 十五、自定义件
 
-- [ ] 启动即应用当前主题（catppuccin，经解析器读取 `~/.local/state/omarchy/current/theme/neovim.lua`）
-- [ ] 解析器断言兜底：故意破坏 spec 文件时报错不静默
-- [ ] 热重载：`omarchy theme set <other>` 后 running nvim 即时跟随（切回原主题同验）
-- [ ] 连续切换 10 次无漏事件（父目录 watch + rearm 时序验证）
-- [ ] 热重载后透明度重应用（`transparency.lua` 重 source，Normal 等组背景透明）
-- [ ] 25 个主题插件在切换时可加载（含 aether 系通用主题 opts 注入）
-- [ ] `User LazyReload` 事件源已消失，确认无残留监听依赖
-
-## 十、自定义件
-
-- [ ] remote_clipboard：本地 Wayland 下 copy 走 wl-copy、paste 走 wl-paste
-- [ ] remote_clipboard：tmux 会话内 copy 触发 OSC 52（tmux buffer 重播）
-- [ ] remote_clipboard：SSH 会话下 OSC 52 生效（`echo $TMUX`/`$SSH_TTY` 场景按实际可达者测）
-- [ ] 无 tmux/SSH/herdr 时 `vim.g.clipboard` 不被覆盖（系统默认 clipboard）
+- [ ] remote_clipboard：Wayland / tmux OSC52 / SSH 分支
 - [ ] `plugin/after/transparency.lua` 每次启动生效
-- [ ] options 中 `vim.g.omarchy_remote_clipboard_osc52` 开关保留
+- [ ] 会话 persistence `<leader>qs/qS/ql/qd`
 
-## 十一、性能
+## 十六、保留差异（相对 LazyVim 16.0 基线，延续既有接受）
 
-- [x] 基线数据（记录于基线提交日）：`--startuptime` 连续 6 次 `NVIM STARTED`：
-  59.5 / 56.7 / 55.3 / 59.1 / 55.7 / 53.3 ms，中位约 56ms
-  （首次单次读数 33ms 为热缓存态，仅作参考，不作基线）
-- [x] 迁移后同法 6 次：164.1 / 163.0 / 170.0 / 165.6 / 161.1 / 159.2 ms，中位约 164ms
-- [x] **结论（已裁决接受）**：2.9 倍超 112ms（基线 2 倍）红线，但绝对值 164ms
-  低于 200ms 通用无感线，判据取绝对值可感性，决策记录为“接受现状”。
-  根因：插桩实测 config 循环 109ms（LSP 域 48 / lualine 18 / blink 12 /
-  bufferline 8.5），系基线的事件懒加载（BufReadPre/cmd/VeryLazy）在 vim.pack
-  全量加载下前移至启动。曾评估并放弃 config 级延迟调度与按需 packadd
-  （前者有依赖返工风险，后者与纯 vim.pack 架构裁决冲突）；
-  若日后体感迟滞，复启该项优化（插桩脚本方法见 git 历史本节提交）
+- LazyVim Changelog（`<leader>L`）→ Neovim news（发行版概念已移除）
+- dashboard 的 `x` 键（`:LazyExtras`）移除（extras 概念不存在）
+- remote_clipboard 在 options 早期生效（基线 VeryLazy 时序的既有偏离，本次未动）
+- 非 Omarchy 机器的静态回退主题由 `meow.theme.load` 触发（机制换了、失败
+  分支行为与切换前一致）
 
-## 十二、质量闸门（步骤 7 落地后核对）
+## 十七、非目标（本次不做，显式点名）
 
-- [x] 本地 `stylua --check` 全过
-- [x] 本地 `selene` 全过（存量告警 322→0：规则级豁免仅 `mixed_table`，另 3 处定点内联 allow：`_G` 持久化×2、`assert(buf)`）
-- [x] pre-commit 钩子（迁移自 `.githooks`，行为一比一）安装并拦截过一次故意错误：拦截、放行、`fail_fast` 短路三态均实测（pre-commit 默认跑完全部钩子，短路语义靠 `fail_fast: true` 补齐）；定义见 `.pre-commit-config.yaml`
-- [x] CI 全绿（run 36258848127）：lint（`pre-commit run --all-files`，与本地钩子同源）、headless smoke（ubuntu/macos/windows 矩阵，判据为退出码 0 且无 Error）、lockfile 全新安装测试
-- [x] lockfile 测试未降级：无缓存全新安装与逐 rev 校验完整通过，无确认提示阻塞（init.lua confirm=false 设计生效）
+- 不增删插件（49 件集合不变）；对照源码不升 16.0.1，行为源仍 16.0.0
+- Neovim 0.12+ 与三平台分级声明不变；AGENTS 行为源纪律、pre-commit 与提交规范不变
+- 100ms 性能门槛仅本机执行，不进 CI（runner 噪声）
+- LazyVim 发行版回归路线本次不做，日后另议
 
-## 十三、清理与交付
+## 十八、清理与交付
 
-- [ ] starter 残留已清：`example.lua`、`.neoconf.json`、`lazyvim.json`、`lazy-lock.json`、旧 README
-- [ ] LICENSE 为 Apache-2.0 且已补署名
-- [ ] README 中文完稿：安装、跨机同步（clone → 重启装齐 → `vim.pack.update`）、hook 安装、主题耦合机制
-- [ ] 全项打勾后删除 `~/.local/share/nvim/lazy/`（mason 不动），删后 nvim 正常启动
-- [ ] `nvim-pack-lock.json` 已入库并推送
-- [ ] 仓库 https://github.com/brightmeows/nvim-config 为 PUBLIC
+- [x] `nvim-pack-lock.json` 与 `lua/meow/packcheck.lua` 已删除（清理批次）
+- [x] 全仓 `rg 'vim.pack|nvim-pack|问题[0-9]'` 对产出物清零（含注释中的
+  盘问编号——产物边界）
+- [x] README/AGENTS 已同步 lazy 口径（锁名、更新命令、强测命令）
+- [ ] 清理批次推送、CI 首绿
+- [ ] `~/.local/share/nvim/site/pack/core` 删除（复用平移完成后，冒烟与
+  CI 通过后执行）
