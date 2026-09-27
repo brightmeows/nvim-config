@@ -20,9 +20,9 @@
 - [x] 启动即应用当前主题（经上游 spec 注入与 ColorSchemePre 加载，colors_name = catppuccin-mocha）
 - [x] 无 vim.pack 残留（`rg 'vim.pack|nvim-pack'` 对 lua/init/plugin/scripts 清零；
   nvim-pack-lock.json 与 packcheck 已随切换批次删除）
-- [ ] CI lint / 三平台强测 / lockfile 全新安装三绿（推送后按流水线首绿勾选）
-- [ ] 干净机器全新安装逐 rev 校验 `nvim -l scripts/verify-lockfile.lua` 50/50
-  （CI lockfile job；本机对拍已 50/50）
+- [x] CI lint / 三平台强测 / lockfile 全新安装三绿（首绿 run 36301007177）
+- [x] 干净机器全新安装逐 rev 校验（CI lockfile job 同 run 绿：全新安装 +
+  `verify-lockfile` 50/50；本机对拍亦 50/50）
 
 ## 二、懒加载恢复（恢复项，行为源 LazyVim 16.0 触发映射）
 
@@ -74,8 +74,9 @@ colorscheme 件走 lazy=true。
 
 ## 五、性能
 
-- [x] 切换后本机六次 `--startuptime` 中位 **33.3ms**（28.9 / 30.0 / 31.8 /
-  34.7 / 34.9 / 45.6），低于 100ms 门槛，优于基线 56ms 与 vim.pack 终态 164ms
+- [x] 切换后本机六次 `--startuptime` 中位 **32.1ms**（29.9 / 31.7 / 31.9 /
+  32.4 / 37.2 / 42.5，终版状态复测），低于 100ms 门槛，优于基线 56ms
+  与 vim.pack 终态 164ms（中间态另测过 33.3ms，同结论）
 - [x] dashboard 页脚为原生 lazy.stats：伪 TUI（80x35）实测
   “Neovim loaded 3/50 plugins in 35.13ms”
 
@@ -88,7 +89,11 @@ colorscheme 件走 lazy=true。
 ## 七、质量闸门
 
 - [x] `pre-commit run --all-files`（stylua + selene）全绿、0 告警
-- [ ] CI 全绿：lint、三平台强测 smoke、lockfile 全新安装（首绿后勾）
+- [x] CI 全绿（首绿 run 36301007177）：lint、三平台强测 smoke、lockfile
+  全新安装与逐 rev 校验
+- 注：runner 无 `tree-sitter` CLI，smoke job 经 npm 预装；mason 等异步安装
+  收敛在不设闸的安装步完成（`scripts/settle-installs.lua`，本地与 CI 同源），
+  强测步零在途安装（首跑失败根因已记录于 ci 提交 d663a0a）
 
 ## 八、全局选项
 
@@ -190,6 +195,7 @@ colorscheme 件走 lazy=true。
 - [x] 全仓 `rg 'vim.pack|nvim-pack|问题[0-9]'` 对产出物清零（含注释中的
   盘问编号——产物边界）
 - [x] README/AGENTS 已同步 lazy 口径（锁名、更新命令、强测命令）
-- [ ] 清理批次推送、CI 首绿
-- [ ] `~/.local/share/nvim/site/pack/core` 删除（复用平移完成后，冒烟与
-  CI 通过后执行）
+- [x] 清理批次推送、CI 首绿（run 36301007177；分四批：切换本体、ci、docs、ci 修复）
+- [x] `~/.local/share/nvim/site/pack` 已移出并删除（vim.pack 启动会自动重写
+  nvim-pack-lock.json，移出后不再再生；129M 备份在 CI 首绿后删除，
+  插件可由 git 远端重装，回退锚点为 tag `vim-pack-final`）
