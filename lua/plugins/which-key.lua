@@ -1,7 +1,25 @@
--- which-key：分组标签与弹窗。行为源：LazyVim plugins/editor.lua 的 which-key spec。
+-- which-key：分组标签与弹窗。行为源：LazyVim plugins/editor.lua 的 which-key
+-- spec（event=VeryLazy、keys 字段；opts 内容与基线逐条一致）。
 return {
-  src = "https://github.com/folke/which-key.nvim",
-  name = "which-key.nvim",
+  "https://github.com/folke/which-key.nvim",
+  event = "VeryLazy",
+  -- stylua: ignore
+  keys = {
+    {
+      "<leader>?",
+      function()
+        require("which-key").show({ global = false })
+      end,
+      desc = "Buffer Keymaps (which-key)",
+    },
+    {
+      "<c-w><space>",
+      function()
+        require("which-key").show({ keys = "<c-w>", loop = true })
+      end,
+      desc = "Window Hydra Mode (which-key)",
+    },
+  },
   config = function()
     local wk = require("which-key")
     wk.setup({
@@ -45,11 +63,5 @@ return {
         },
       },
     })
-    vim.keymap.set("n", "<leader>?", function()
-      require("which-key").show({ global = false })
-    end, { desc = "Buffer Keymaps (which-key)", silent = true })
-    vim.keymap.set("n", "<c-w><space>", function()
-      require("which-key").show({ keys = "<c-w>", loop = true })
-    end, { desc = "Window Hydra Mode (which-key)", silent = true })
   end,
 }

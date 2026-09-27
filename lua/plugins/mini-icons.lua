@@ -1,13 +1,16 @@
--- mini.icons：图标。行为源：LazyVim plugins/ui.lua 的 mini.icons spec。
--- preload 段保证 require("nvim-web-devicons") 落到 mini.icons mock（LazyVim 同款）。
+-- mini.icons：图标。行为源：LazyVim plugins/ui.lua 的 mini.icons spec
+-- （lazy=true；preload 段在 init 执行——须早于任何 require("nvim-web-devicons")，
+-- 与基线同位；require 会触发未加载插件的加载）。
 return {
-  src = "https://github.com/nvim-mini/mini.icons",
-  name = "mini.icons",
-  config = function()
+  "https://github.com/nvim-mini/mini.icons",
+  lazy = true,
+  init = function()
     package.preload["nvim-web-devicons"] = function()
       require("mini.icons").mock_nvim_web_devicons()
       return package.loaded["nvim-web-devicons"]
     end
+  end,
+  config = function()
     require("mini.icons").setup({
       file = {
         [".keep"] = { glyph = "󰊢", hl = "MiniIconsGrey" },

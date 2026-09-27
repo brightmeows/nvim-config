@@ -1,18 +1,21 @@
 -- colorscheme：主题应用与 catppuccin/tokyonight 的集成配置。
--- 行为源：LazyVim plugins/colorscheme.lua。
--- 此文件为静态应用版（当前主题）；步骤 5 的 Omarchy 兼容解析器
--- （meow.theme）将接管主题来源，读取上游生成的 neovim.lua。
+-- 行为源：LazyVim plugins/colorscheme.lua（两件均 lazy=true；catppuccin 的
+-- bufferline 集成走 specs 段合并到 bufferline 的 opts）。
+-- 差异：静态回退应用（原 config 内 pcall colorscheme）随懒加载迁至
+-- meow.theme.load 的非 Omarchy 分支——catppuccin 变 lazy 后需由外部
+-- colorscheme 调用触发 ColorSchemePre 加载。
 return {
   {
-    src = "https://github.com/folke/tokyonight.nvim",
-    name = "tokyonight.nvim",
+    "https://github.com/folke/tokyonight.nvim",
+    lazy = true,
     config = function()
       require("tokyonight").setup({ style = "moon" })
     end,
   },
   {
-    src = "https://github.com/catppuccin/nvim",
+    "https://github.com/catppuccin/nvim",
     name = "catppuccin",
+    lazy = true,
     config = function()
       require("catppuccin").setup({
         lsp_styles = {
@@ -51,17 +54,19 @@ return {
           blink_cmp = true,
         },
       })
-      -- 当前主题应用（基线：Omarchy 生成 spec 的 opts.colorscheme = "catppuccin-nvim"；
-      -- tokyonight 保留 moon style 作为回退）。步骤 5 起由 meow.theme 动态读取。
-      pcall(vim.cmd.colorscheme, "catppuccin-nvim")
-
-      -- catppuccin 的 bufferline 集成（LazyVim colorscheme.lua 的 specs 段等效）
-      local ok, bufferline = pcall(require, "bufferline")
-      if ok and (vim.g.colors_name or ""):find("catppuccin") then
-        bufferline.setup({
-          highlights = require("catppuccin.special.bufferline").get_theme(),
-        })
-      end
     end,
+    -- catppuccin 的 bufferline 集成（行为源：LazyVim colorscheme.lua 的
+    -- specs 段，optional 合并；bufferline 加载时 colors_name 已应用）
+    specs = {
+      {
+        "https://github.com/akinsho/bufferline.nvim",
+        optional = true,
+        opts = function(_, opts)
+          if (vim.g.colors_name or ""):find("catppuccin") then
+            opts.highlights = require("catppuccin.special.bufferline").get_theme()
+          end
+        end,
+      },
+    },
   },
 }

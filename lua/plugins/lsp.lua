@@ -1,34 +1,47 @@
 -- LSP 域：mason + mason-lspconfig + nvim-lspconfig。
--- 行为源：LazyVim plugins/lsp/init.lua。
--- 差异：lazy 的 keys handler（Snacks.keymap lsp filter 承接 has 条件）；
--- mason 安装成功后的 FileType 重触发（lazy 懒加载专用）移除——vim.pack
--- 全量加载无需该事件；LazyVim.opts(...) 查询改为本地表。
+-- 行为源：LazyVim plugins/lsp/init.lua 的 spec 结构——nvim-lspconfig 挂
+-- BufReadPre/BufNewFile 事件、dependencies 带 mason 与 mason-lspconfig
+--（占位空 config，setup 由本文件 lspconfig 段调用），mason 挂 cmd/keys/build；
+-- mason 安装成功后的 FileType 重触发恢复（懒加载专用，行为源同款）。
 return {
   {
-    src = "https://github.com/mason-org/mason.nvim",
-    name = "mason.nvim",
-    config = function()
-      require("mason").setup({ ensure_installed = { "stylua", "shfmt" } })
+    "https://github.com/mason-org/mason.nvim",
+    cmd = "Mason",
+    keys = { { "<leader>cm", "<cmd>Mason<cr>", desc = "Mason" } },
+    build = ":MasonUpdate",
+    opts = {
+      ensure_installed = { "stylua", "shfmt" },
+    },
+    config = function(_, opts)
+      require("mason").setup(opts)
       local mr = require("mason-registry")
+      -- mason 安装成功后重触发 FileType（行为源：LazyVim 同款，
+      -- 让新装的 server 在懒加载下立即可用）
+      mr:on("package:install:success", function()
+        vim.defer_fn(function()
+          require("lazy.core.handler.event").trigger({
+            event = "FileType",
+            buf = vim.api.nvim_get_current_buf(),
+          })
+        end, 100)
+      end)
       mr.refresh(function()
-        for _, tool in ipairs({ "stylua", "shfmt" }) do
+        for _, tool in ipairs(opts.ensure_installed) do
           local p = mr.get_package(tool)
           if not p:is_installed() then
             p:install()
           end
         end
       end)
-      vim.keymap.set("n", "<leader>cm", "<cmd>Mason<cr>", { desc = "Mason", silent = true })
     end,
   },
   {
-    src = "https://github.com/mason-org/mason-lspconfig.nvim",
-    name = "mason-lspconfig.nvim",
-    -- config 在 nvim-lspconfig 的 setup 中调用（LazyVim 同款顺序），此处仅占位 spec
-  },
-  {
-    src = "https://github.com/neovim/nvim-lspconfig",
-    name = "nvim-lspconfig",
+    "https://github.com/neovim/nvim-lspconfig",
+    event = { "BufReadPre", "BufNewFile" },
+    dependencies = {
+      "mason.nvim",
+      { "mason-org/mason-lspconfig.nvim", config = function() end },
+    },
     config = function()
       local meow = require("meow")
 
@@ -170,7 +183,7 @@ return {
         if type(has) == "string" then
           method = has:find("/") and has or ("textDocument/" .. has)
         elseif type(has) == "table" then
-          -- 多条件：取首个（LazyVim 语义为逐 method 过滤，Snacks filter 单 method；
+          -- 多条件：取首（LazyVim 语义为逐 method 过滤，Snacks filter 单 method；
           -- 实测基线这些键在 lua_ls 下均可用，取首项覆盖主路径）
           method = has[1]:find("/") and has[1] or ("textDocument/" .. has[1])
         end

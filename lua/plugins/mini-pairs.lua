@@ -1,8 +1,9 @@
--- mini.pairs：自动配对。行为源：LazyVim plugins/coding.lua 的 mini.pairs spec，
--- config 走 meow.mini.pairs（含 markdown 代码块与 skip 规则，以及 <leader>up toggle）。
+-- mini.pairs：自动配对。行为源：LazyVim plugins/coding.lua 的 mini.pairs spec
+-- （event=VeryLazy；config 走 meow.mini.pairs，含 markdown 代码块与 skip 规则，
+-- 以及 <leader>up toggle）。
 return {
-  src = "https://github.com/nvim-mini/mini.pairs",
-  name = "mini.pairs",
+  "https://github.com/nvim-mini/mini.pairs",
+  event = "VeryLazy",
   config = function()
     require("meow").mini.pairs({
       modes = { insert = true, command = true, terminal = false },

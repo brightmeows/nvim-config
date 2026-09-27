@@ -1,8 +1,27 @@
--- noice：消息/cmdline UI。行为源：LazyVim plugins/ui.lua 的 noice spec。
+-- noice：消息/cmdline UI。行为源：LazyVim plugins/ui.lua 的 noice spec
+-- （event=VeryLazy、keys 字段镜像；config 含基线的 messages clear HACK）。
 return {
-  src = "https://github.com/folke/noice.nvim",
-  name = "noice.nvim",
+  "https://github.com/folke/noice.nvim",
+  event = "VeryLazy",
+  -- stylua: ignore
+  keys = {
+    { "<leader>sn", "", desc = "+noice" },
+    { "<S-Enter>", function() require("noice").redirect(vim.fn.getcmdline()) end, mode = "c", desc = "Redirect Cmdline" },
+    { "<leader>snl", function() require("noice").cmd("last") end, desc = "Noice Last Message" },
+    { "<leader>snh", function() require("noice").cmd("history") end, desc = "Noice History" },
+    { "<leader>sna", function() require("noice").cmd("all") end, desc = "Noice All" },
+    { "<leader>snd", function() require("noice").cmd("dismiss") end, desc = "Dismiss All" },
+    { "<leader>snt", function() require("noice").cmd("pick") end, desc = "Noice Picker (Telescope/FzfLua)" },
+    { "<c-f>", function() if not require("noice.lsp").scroll(4) then return "<c-f>" end end, silent = true, expr = true, desc = "Scroll Forward", mode = { "i", "n", "s" } },
+    { "<c-b>", function() if not require("noice.lsp").scroll(-4) then return "<c-b>" end end, silent = true, expr = true, desc = "Scroll Backward", mode = { "i", "n", "s" } },
+  },
   config = function()
+    -- HACK: noice shows messages from before it was enabled,
+    -- but this is not ideal when Lazy is installing plugins,
+    -- so clear the messages in this case.（LazyVim 同款）
+    if vim.o.filetype == "lazy" then
+      vim.cmd([[messages clear]])
+    end
     require("noice").setup({
       lsp = {
         override = {
@@ -30,31 +49,5 @@ return {
         long_message_to_split = true,
       },
     })
-
-    -- LazyVim ui.lua 的 noice keymaps
-    local function ncmd(name, _desc)
-      return function()
-        require("noice").cmd(name)
-      end
-    end
-    vim.keymap.set("n", "<leader>sn", "", { desc = "+noice" })
-    vim.keymap.set("c", "<S-Enter>", function()
-      require("noice").redirect(vim.fn.getcmdline())
-    end, { desc = "Redirect Cmdline", silent = true })
-    vim.keymap.set("n", "<leader>snl", ncmd("last"), { desc = "Noice Last Message", silent = true })
-    vim.keymap.set("n", "<leader>snh", ncmd("history"), { desc = "Noice History", silent = true })
-    vim.keymap.set("n", "<leader>sna", ncmd("all"), { desc = "Noice All", silent = true })
-    vim.keymap.set("n", "<leader>snd", ncmd("dismiss"), { desc = "Dismiss All", silent = true })
-    vim.keymap.set("n", "<leader>snt", ncmd("pick"), { desc = "Noice Picker (Telescope/FzfLua)", silent = true })
-    vim.keymap.set({ "i", "n", "s" }, "<c-f>", function()
-      if not require("noice.lsp").scroll(4) then
-        return "<c-f>"
-      end
-    end, { silent = true, expr = true, desc = "Scroll Forward" })
-    vim.keymap.set({ "i", "n", "s" }, "<c-b>", function()
-      if not require("noice.lsp").scroll(-4) then
-        return "<c-b>"
-      end
-    end, { silent = true, expr = true, desc = "Scroll Backward" })
   end,
 }

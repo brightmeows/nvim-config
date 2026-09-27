@@ -1,8 +1,9 @@
--- gitsigns：git 行标记与 hunk 操作。行为源：LazyVim plugins/editor.lua 的 gitsigns spec。
--- 差异：on_attach 键位原为插件 spec 内注册，vim.pack 语义下 setup 后直接注册（含 <leader>uG toggle）。
+-- gitsigns：git 行标记与 hunk 操作。行为源：LazyVim plugins/editor.lua 的
+-- gitsigns spec（event=LazyFile；on_attach 键位为 buffer-local，随加载注册
+-- 与基线同构；<leader>uG toggle 在 config 内注册=基线第二 spec 的 opts 时机）。
 return {
-  src = "https://github.com/lewis6991/gitsigns.nvim",
-  name = "gitsigns.nvim",
+  "https://github.com/lewis6991/gitsigns.nvim",
+  event = "LazyFile",
   config = function()
     require("gitsigns").setup({
       signs = {
@@ -67,7 +68,8 @@ return {
       end,
     })
 
-    -- LazyVim editor.lua 的 gitsigns toggle（原在第二 spec 的 opts 函数里注册）
+    -- LazyVim editor.lua 的 gitsigns toggle（基线在第二 spec 的 opts 函数里注册，
+    -- 即 gitsigns 加载时——本文件 config 同时机）
     Snacks.toggle({
       name = "Git Signs",
       get = function()

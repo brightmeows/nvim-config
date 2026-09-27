@@ -1,9 +1,9 @@
--- mini.ai：文本对象扩展。行为源：LazyVim plugins/coding.lua 的 mini.ai spec。
--- 差异：which-key 注册原走 LazyVim.on_load（lazy 加载事件）；vim.pack 全量加载下
--- 延后到 VimEnter 后注册（此时 which-key setup 已完成）。
+-- mini.ai：文本对象扩展。行为源：LazyVim plugins/coding.lua 的 mini.ai spec
+-- （event=VeryLazy；which-key 注册与基线同在加载期直调——LazyVim 在 opts
+-- 函数里调 ai_whichkey，此处 config 内直调，时序同为 VeryLazy 加载批）。
 return {
-  src = "https://github.com/nvim-mini/mini.ai",
-  name = "mini.ai",
+  "https://github.com/nvim-mini/mini.ai",
+  event = "VeryLazy",
   config = function()
     local ai = require("mini.ai")
     local opts = {
@@ -27,8 +27,6 @@ return {
       },
     }
     ai.setup(opts)
-    vim.schedule(function()
-      require("meow").mini.ai_whichkey(opts)
-    end)
+    require("meow").mini.ai_whichkey(opts)
   end,
 }

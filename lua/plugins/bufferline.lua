@@ -1,11 +1,26 @@
--- bufferline：标签栏。行为源：LazyVim plugins/ui.lua 的 bufferline spec。
--- 差异：LazyVim 的 config 修复函数（会话恢复时刷新）保留；图标走 meow.icons。
+-- bufferline：标签栏。行为源：LazyVim plugins/ui.lua 的 bufferline spec
+-- （event=VeryLazy、keys 字段、opts+config 分离——catppuccin 的 specs 段
+-- 需要 opts 承载才能合并 highlights）。
 return {
-  src = "https://github.com/akinsho/bufferline.nvim",
-  name = "bufferline.nvim",
-  config = function()
+  "https://github.com/akinsho/bufferline.nvim",
+  event = "VeryLazy",
+  -- stylua: ignore
+  keys = {
+    { "<leader>bp", "<Cmd>BufferLineTogglePin<CR>", desc = "Toggle Pin" },
+    { "<leader>bP", "<Cmd>BufferLineGroupClose ungrouped<CR>", desc = "Delete Non-Pinned Buffers" },
+    { "<leader>br", "<Cmd>BufferLineCloseRight<CR>", desc = "Delete Buffers to the Right" },
+    { "<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", desc = "Delete Buffers to the Left" },
+    { "<S-h>", "<cmd>BufferLineCyclePrev<cr>", desc = "Prev Buffer" },
+    { "<S-l>", "<cmd>BufferLineCycleNext<cr>", desc = "Next Buffer" },
+    { "[b", "<cmd>BufferLineCyclePrev<cr>", desc = "Prev Buffer" },
+    { "]b", "<cmd>BufferLineCycleNext<cr>", desc = "Next Buffer" },
+    { "[B", "<cmd>BufferLineMovePrev<cr>", desc = "Move buffer prev" },
+    { "]B", "<cmd>BufferLineMoveNext<cr>", desc = "Move buffer next" },
+    { "<leader>bj", "<cmd>BufferLinePick<cr>", desc = "Pick Buffer" },
+  },
+  opts = function()
     local icons = require("meow").icons
-    require("bufferline").setup({
+    return {
       options = {
         close_command = function(n)
           Snacks.bufdelete(n)
@@ -29,7 +44,10 @@ return {
           return icons.ft[opts.filetype]
         end,
       },
-    })
+    }
+  end,
+  config = function(_, opts)
+    require("bufferline").setup(opts)
     -- Fix bufferline when restoring a session（LazyVim 同款）
     vim.api.nvim_create_autocmd({ "BufAdd", "BufDelete" }, {
       callback = function()
@@ -38,21 +56,5 @@ return {
         end)
       end,
     })
-
-    -- LazyVim ui.lua 的 bufferline keymaps
-    local function map(lhs, rhs, desc)
-      vim.keymap.set("n", lhs, rhs, { desc = desc, silent = true })
-    end
-    map("<leader>bp", "<Cmd>BufferLineTogglePin<CR>", "Toggle Pin")
-    map("<leader>bP", "<Cmd>BufferLineGroupClose ungrouped<CR>", "Delete Non-Pinned Buffers")
-    map("<leader>br", "<Cmd>BufferLineCloseRight<CR>", "Delete Buffers to the Right")
-    map("<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", "Delete Buffers to the Left")
-    map("<S-h>", "<cmd>BufferLineCyclePrev<cr>", "Prev Buffer")
-    map("<S-l>", "<cmd>BufferLineCycleNext<cr>", "Next Buffer")
-    map("[b", "<cmd>BufferLineCyclePrev<cr>", "Prev Buffer")
-    map("]b", "<cmd>BufferLineCycleNext<cr>", "Next Buffer")
-    map("[B", "<cmd>BufferLineMovePrev<cr>", "Move buffer prev")
-    map("]B", "<cmd>BufferLineMoveNext<cr>", "Move buffer next")
-    map("<leader>bj", "<cmd>BufferLinePick<cr>", "Pick Buffer")
   end,
 }

@@ -7,9 +7,12 @@
 -- 目录切换为 rm -rf + mv 原子替换（omarchy-theme-set 源码 292-293 行），
 -- 故 watcher 必须 watch 父目录 current/ 而非 theme/ 的 inode。
 --
--- 本模块职责：
---   load()   —— dofile 上游 spec，断言结构（缺字段即报错不静默），
---               经 vim.pack.add 保证主题插件在位，setup opts，应用 colorscheme。
+-- 本模块职责（lazy.nvim 形态）：
+--   spec()   —— 启动期：dofile 上游 spec，校验预装集（缺件剔除并显式报错），
+--               返回可并入 lazy spec 树的条目；启动注入与热重载同口径报错。
+--   load()   —— 应用 colorscheme（lazy 的 ColorSchemePre 钩子先加载主题插件并
+--               跑其 config）；aether 系通用主题手动注入 opts；非 Omarchy 机器
+--               静态回退（原 colorscheme.lua 的启动应用随懒加载迁至此处）。
 --   watch()  —— fs_event watch current/ 父目录，事件 debounce 1500ms
 --               （吸收 aether CLI/omarchy 的连续写入），重挂失效句柄，
 --               触发 load() 并重放 ColorScheme 后续（透明度重应用等）。
@@ -20,6 +23,9 @@ local uv = vim.uv or vim.loop
 local OMARCHY_STATE = vim.fn.expand("~/.local/state/omarchy/current")
 local SPEC_PATH = OMARCHY_STATE .. "/theme/neovim.lua"
 local TRANSPARENCY = vim.fn.stdpath("config") .. "/plugin/after/transparency.lua"
+-- 非 Omarchy 机器的静态回退主题；catppuccin 变为 lazy 后由此处的
+-- colorscheme 调用触发 ColorSchemePre 加载
+local FALLBACK_COLORSCHEME = "catppuccin-nvim"
 
 -- watcher 状态（挂 _G 防模块重载时句柄泄漏——aether 同款教训）
 -- selene: allow(global_usage)
@@ -30,6 +36,15 @@ local state = _G.__meow_theme_watch or {
 }
 -- selene: allow(global_usage)
 _G.__meow_theme_watch = state
+
+--- 启动期失败时的静态回退（仅当尚未成功应用过主题时兑底——与现行行为一致：
+--- spec 损坏/缺失时静态回退照常上色且显式报错；热重载失败保持当前主题）。
+local function fallback_once()
+  if not state.applied_any and not state.fallback_applied then
+    state.fallback_applied = true
+    pcall(vim.cmd.colorscheme, FALLBACK_COLORSCHEME)
+  end
+end
 
 --- 从上游 spec 提取主题插件列表与 colorscheme 名。
 --- 上游结构：条目 1..n 为插件 spec（字符串或 {src/name/branch/opts...}），
@@ -64,17 +79,118 @@ local function parse(spec)
   return colorscheme, theme_specs
 end
 
---- 上游 spec → vim.pack spec（name 默认取 repo 名；branch → version）。
-local function to_pack_spec(item)
-  local src = item.src or item[1]
-  assert(type(src) == "string", "主题插件条目缺 src")
-  return {
-    src = src,
-    name = item.name,
-    version = item.branch,
-    -- opts 留在 data 里，load 时交还给主题插件 setup
-    data = item.opts,
-  }
+--- 预装集：themes.lua 与 colorscheme.lua 声明的插件 URL → 规范 name/branch。
+local function canonical()
+  local set = {}
+  for _, mod in ipairs({ "plugins.themes", "plugins.colorscheme" }) do
+    local ok, specs = pcall(require, mod)
+    if ok and type(specs) == "table" then
+      for _, s in ipairs(specs) do
+        local url = s.src or s[1]
+        if type(url) == "string" then
+          if not url:match("^https?://") then
+            url = "https://github.com/" .. url
+          end
+          set[url] = { name = s.name, branch = s.branch }
+        end
+      end
+    end
+  end
+  return set
+end
+
+--- 上游条目 → 已校验数据（URL 解析、预装集比对）。
+---@return table[] entries, string[] missing
+local function resolve(theme_specs)
+  local set = canonical()
+  local entries, missing = {}, {}
+  for _, item in ipairs(theme_specs) do
+    local raw = item.src or item[1]
+    local url
+    if type(raw) == "string" then
+      url = raw:match("^https?://") and raw or ("https://github.com/" .. raw)
+    end
+    local can = url and set[url]
+    if can then
+      entries[#entries + 1] = {
+        url = url,
+        name = can.name,
+        branch = can.branch,
+        data = item.opts,
+      }
+    else
+      missing[#missing + 1] = tostring(raw)
+    end
+  end
+  return entries, missing
+end
+
+--- 未预装插件显式报错（启动注入与热重载同一口径——缺件即失败）。
+local function report_missing(missing)
+  if #missing == 0 then
+    return
+  end
+  vim.notify(
+    "Omarchy 主题 spec 含未预装插件（已跳过，补进 lua/plugins/themes.lua 后重启生效）:\n"
+      .. table.concat(missing, "\n"),
+    vim.log.levels.ERROR,
+    { title = "omarchy-theme" }
+  )
+end
+
+local function fingerprint_of(stat)
+  return stat.mtime.sec .. ":" .. stat.mtime.nsec .. ":" .. stat.size
+end
+
+--- 启动期：返回可并入 lazy spec 树的主题条目（缺件剔除并报错）。
+---@return table[]
+function M.spec()
+  if vim.fn.filereadable(SPEC_PATH) ~= 1 then
+    state.pending = nil
+    state.spec_fingerprint = nil
+    return {}
+  end
+  local stat = uv.fs_stat(SPEC_PATH)
+  if not stat then
+    return {}
+  end
+  local fingerprint = fingerprint_of(stat)
+  if state.spec_fingerprint == fingerprint and state.pending then
+    return state.pending.inject
+  end
+
+  local ok, raw = pcall(dofile, SPEC_PATH)
+  if not ok then
+    vim.notify(
+      "Omarchy 主题 spec 解析失败:\n" .. tostring(raw),
+      vim.log.levels.ERROR,
+      { title = "omarchy-theme" }
+    )
+    return {}
+  end
+  local parse_ok, colorscheme, theme_specs = pcall(parse, raw)
+  if not parse_ok then
+    -- 断言兜底：上游结构变化必须显式报错不静默
+    vim.notify(
+      "Omarchy 主题 spec 结构断言失败:\n" .. tostring(colorscheme),
+      vim.log.levels.ERROR,
+      { title = "omarchy-theme" }
+    )
+    return {}
+  end
+
+  local entries, missing = resolve(theme_specs)
+  report_missing(missing)
+
+  -- 注入条目只携带规范字段（url/name/branch/lazy），与 themes.lua 同名合并；
+  -- 上游 opts 不进 spec，由 load() 在应用期手动注入（热重载同样生效）
+  local inject = {}
+  for _, e in ipairs(entries) do
+    inject[#inject + 1] = { e.url, name = e.name, branch = e.branch, lazy = true }
+  end
+  state.spec_fingerprint = fingerprint
+  state.pending = { colorscheme = colorscheme, entries = entries, inject = inject }
+  return inject
 end
 
 --- 应用当前主题（幂等；watcher 与启动共用）。
@@ -86,7 +202,11 @@ function M.load(opts)
   opts = opts or {}
   local readable = vim.fn.filereadable(SPEC_PATH) == 1
   if not readable then
-    -- 非 Omarchy 机器（多机场景）：静默回退到 colorscheme.lua 的静态应用
+    -- 非 Omarchy 机器（多机场景）：静态回退一次；热重载路径文件缺失则保持当前
+    if not state.applied_any and not state.fallback_applied then
+      state.fallback_applied = true
+      pcall(vim.cmd.colorscheme, FALLBACK_COLORSCHEME)
+    end
     return false
   end
 
@@ -95,60 +215,58 @@ function M.load(opts)
   local pending_fingerprint
   local stat = uv.fs_stat(SPEC_PATH)
   if stat then
-    local fingerprint = stat.mtime.sec .. ":" .. stat.mtime.nsec .. ":" .. stat.size
-    if not opts.force and fingerprint == state.last_fingerprint then
+    pending_fingerprint = fingerprint_of(stat)
+    if not opts.force and pending_fingerprint == state.last_fingerprint then
       return true
     end
-    pending_fingerprint = fingerprint
-  end
-  local ok, spec = pcall(dofile, SPEC_PATH)
-  if not ok then
-    vim.notify(
-      "Omarchy theme spec 解析失败:\n" .. tostring(spec),
-      vim.log.levels.ERROR,
-      { title = "omarchy-theme" }
-    )
-    return false
-  end
-  local parse_ok, colorscheme, theme_specs = pcall(parse, spec)
-  if not parse_ok then
-    -- 断言兑底：上游结构变化必须显式报错不静默（问题5 结论）
-    vim.notify(
-      "Omarchy theme spec 结构断言失败:\n" .. tostring(colorscheme),
-      vim.log.levels.ERROR,
-      { title = "omarchy-theme" }
-    )
-    return false
   end
 
-  -- 主题插件必须在位（themes.lua 预装了全部 20 件；Omarchy 4 通用主题
-  -- aether 也在其中。未装的按需 add——confirm=false 避免阻塞）。
-  local pack_specs = {}
-  for _, item in ipairs(theme_specs) do
-    pack_specs[#pack_specs + 1] = to_pack_spec(item)
-  end
-  if #pack_specs > 0 then
-    local add_ok, add_err = pcall(vim.pack.add, pack_specs, { confirm = false })
-    if not add_ok then
-      vim.notify("主题插件安装失败:\n" .. tostring(add_err), vim.log.levels.ERROR, { title = "omarchy-theme" })
+  local colorscheme, entries
+  if state.pending and state.spec_fingerprint == pending_fingerprint then
+    -- 启动路径：复用 spec() 的解析结果，不重复 dofile
+    colorscheme, entries = state.pending.colorscheme, state.pending.entries
+  else
+    local ok, spec = pcall(dofile, SPEC_PATH)
+    if not ok then
+      vim.notify(
+        "Omarchy 主题 spec 解析失败:\n" .. tostring(spec),
+        vim.log.levels.ERROR,
+        { title = "omarchy-theme" }
+      )
+      fallback_once()
       return false
     end
+    local parse_ok, cs, theme_specs = pcall(parse, spec)
+    if not parse_ok then
+      vim.notify(
+        "Omarchy 主题 spec 结构断言失败:\n" .. tostring(cs),
+        vim.log.levels.ERROR,
+        { title = "omarchy-theme" }
+      )
+      fallback_once()
+      return false
+    end
+    local es, missing = resolve(theme_specs)
+    -- 热重载路径：缺件报错不静默（与 spec() 同口径）
+    report_missing(missing)
+    colorscheme, entries = cs, es
   end
 
-  -- opts.colors 形态（Omarchy 4 的 aether 通用主题）：setup 注入调色板
-  for _, item in ipairs(theme_specs) do
-    local pack = to_pack_spec(item)
-    if type(pack.data) == "table" and pack.data.colors then
-      local mod_name = pack.name or pack.src:gsub(".*/", ""):gsub("%.nvim$", "")
+  -- opts.colors 形态（Omarchy 4 的 aether 通用主题）：setup 注入调色板。
+  -- 模块名取规范 name（rose-pine/aether 等非 URL 尾段名以预装清单为准）。
+  for _, e in ipairs(entries) do
+    if type(e.data) == "table" and e.data.colors then
+      local mod_name = e.name or e.url:match("([^/]+)$"):gsub("%.nvim$", "")
       local mod_ok, mod = pcall(require, mod_name)
       if mod_ok and type(mod.setup) == "function" then
-        pcall(mod.setup, pack.data)
+        pcall(mod.setup, e.data)
       end
     end
   end
 
   -- 应用 colorscheme。catppuccin-nvim 等别名经其 colors/ 入口落到实际 flavor
-  --（基线同机制：apply 后 colors_name = catppuccin-mocha）。
+  --（基线同机制：apply 后 colors_name = catppuccin-mocha）；lazy 的
+  -- ColorSchemePre 钩子会在命令执行前加载主题插件并跑其 config。
   local cs_ok, cs_err = pcall(vim.cmd.colorscheme, colorscheme)
   if not cs_ok then
     vim.notify(
@@ -156,8 +274,10 @@ function M.load(opts)
       vim.log.levels.ERROR,
       { title = "omarchy-theme" }
     )
+    fallback_once()
     return false
   end
+  state.applied_any = true
 
   -- 透明度重应用（热重载路径；启动路径由 plugin/after 正常执行一次）
   if opts.replay_transparency and vim.fn.filereadable(TRANSPARENCY) == 1 then
@@ -244,7 +364,9 @@ function M.watch()
     state.rearm_timer:stop()
     state.rearm_timer:start(2000, 0, function()
       vim.schedule(function()
-        state.rearm_timer:stop()
+        if state.rearm_timer then
+          state.rearm_timer:stop()
+        end
         M.watch()
       end)
     end)

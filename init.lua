@@ -1,111 +1,94 @@
--- 入口：vim.pack 装载 lua/plugins/ 下的插件（无 lazy.nvim / LazyVim）。
-local start_hrtime = vim.uv.hrtime()
-local startuptime_ms = 0
-vim.api.nvim_create_autocmd("VimEnter", {
-  once = true,
-  callback = function()
-    startuptime_ms = (vim.uv.hrtime() - start_hrtime) / 1e6
-  end,
-})
-
--- lazy.stats 兼容垫片：snacks dashboard 的 startup 页脚（“Neovim loaded
--- X/Y plugins in Zms”，默认 preset 的 section = "startup"）在基线由
--- lazy.nvim 的统计模块提供，迁移后该模块消失会炸穿 UIEnter/WinResized。
--- 按零感知判据保留页脚行为：count/loaded 取 vim.pack 托管插件数
--- （全量加载故二者相等），startuptime 在 VimEnter 固化（与 --startuptime
--- 的 NVIM STARTED 同口径，resolve 发生于 UIEnter，晚于 VimEnter）。
-package.preload["lazy.stats"] = function()
-  return {
-    stats = function()
-      local count = 0
-      local ok, plugs = pcall(vim.pack.get)
-      if ok and type(plugs) == "table" then
-        count = #plugs
-      end
-      return {
-        count = count,
-        loaded = count,
-        startuptime = startuptime_ms > 0 and startuptime_ms or ((vim.uv.hrtime() - start_hrtime) / 1e6),
-      }
-    end,
-  }
-end
-
+-- 入口：lazy.nvim 装载 lua/plugins/ 下的插件 spec。
+-- 行为源：LazyVim 16.0 的加载时序（lazyvim/config/init.lua M.setup 的 User
+-- VeryLazy 回调、lazyvim/util/plugin.lua 的 LazyFile glue）；bootstrap 与
+-- lazy.setup 选项对齐基线 config/lazy.lua（e6b27cf）。
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
 require("config.options")
 
--- 插件 spec 收集：每文件返回一个 vim.pack spec（{ src = "..." }）或其列表，
--- 可附带 config 字段（函数）。先全部 add（rtp 就位），再按文件名字典序执行
--- config——加载序由此确定，不依赖文件系统遍历顺序。
-local function is_spec(t)
-  return type(t) == "table" and type(t.src) == "string"
+-- bootstrap：克隆 stable tag（当前指向 v11.17.5）；多机版本一致由
+-- lazy-lock.json 收敛，bootstrap 只决定首克隆落点。
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not vim.uv.fs_stat(lazypath) then
+  local out = vim.fn.system({
+    "git",
+    "clone",
+    "--filter=blob:none",
+    "--branch=stable",
+    "https://github.com/folke/lazy.nvim.git",
+    lazypath,
+  })
+  if vim.v.shell_error ~= 0 then
+    vim.api.nvim_echo({
+      { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
+      { out, "WarningMsg" },
+      { "\nPress any key to exit...", "ErrorMsg" },
+    }, true, {})
+    vim.fn.getchar()
+    os.exit(1)
+  end
 end
+vim.opt.rtp:prepend(lazypath)
 
-local files = {}
-local plugin_dir = vim.fn.stdpath("config") .. "/lua/plugins"
-if vim.fn.isdirectory(plugin_dir) == 1 then
-  for name, kind in vim.fs.dir(plugin_dir) do
-    if (kind == "file" or kind == "link") and name:match("%.lua$") then
-      files[#files + 1] = name:gsub("%.lua$", "")
+-- LazyFile 事件 glue（行为源：lazyvim/util/plugin.lua M.lazy_file，
+-- 事件组 BufReadPost/BufNewFile/BufWritePre 与 LazyVim 16.0 一致）
+local lazy_event = require("lazy.core.handler.event")
+lazy_event.mappings.LazyFile = {
+  id = "LazyFile",
+  event = { "BufReadPost", "BufNewFile", "BufWritePre" },
+}
+lazy_event.mappings["User LazyFile"] = lazy_event.mappings.LazyFile
+
+-- Omarchy 主题 spec 注入：校验预装集，缺件剔除并显式报错（与热重载同口径）
+local theme = require("meow.theme")
+
+require("lazy").setup({
+  spec = {
+    theme.spec(),
+    { import = "plugins" },
+  },
+  defaults = {
+    -- LazyVim 同款：默认不懒，懒加载由各 spec 的事件字段声明
+    lazy = false,
+    -- 版本权威在 lazy-lock.json；钉法特例写在 spec 内（blink tag、aether branch）
+    version = false,
+  },
+  install = { colorscheme = { "tokyonight", "habamax" } },
+  checker = {
+    enabled = true, -- 每小时检查更新（lazy 默认频率，基线同款）
+    notify = false, -- 更新数仅经 lualine 呈现，不发通知
+  },
+  performance = {
+    rtp = {
+      disabled_plugins = { "gzip", "tarPlugin", "tohtml", "tutor", "zipPlugin" },
+    },
+  },
+})
+
+-- 当前主题应用与热重载 watcher（注入已在 setup 前完成，此处只管应用；
+-- 非 Omarchy 机器走静态回退）
+theme.load()
+theme.watch()
+
+-- 多机版本对齐守卫：只读比对锁与盘上 HEAD，不一致时提示 :Lazy restore
+require("meow.lockguard").start()
+
+-- 行为源：LazyVim 16.0 lazyvim/config/init.lua M.setup 的 User VeryLazy 回调——
+-- autocmds 按 argc 决定早加载或 VeryLazy；keymaps 与 format/root setup 在 VeryLazy。
+local lazy_autocmds = vim.fn.argc(-1) == 0
+if not lazy_autocmds then
+  require("config.autocmds")
+end
+vim.api.nvim_create_autocmd("User", {
+  pattern = "VeryLazy",
+  once = true,
+  callback = function()
+    if lazy_autocmds then
+      require("config.autocmds")
     end
-  end
-end
-table.sort(files)
-
-local specs, configs = {}, {}
-for _, mod in ipairs(files) do
-  local ret = require("plugins." .. mod)
-  local list = is_spec(ret) and { ret } or ret
-  if type(list) ~= "table" then
-    error(("lua/plugins/%s.lua 返回值必须是 spec 或 spec 列表"):format(mod))
-  end
-  for i, spec in ipairs(list) do
-    if not is_spec(spec) then
-      error(("lua/plugins/%s.lua 第 %d 项不是合法 spec（缺 src 字符串）"):format(mod, i))
-    end
-    if spec.config ~= nil and type(spec.config) ~= "function" then
-      error(("lua/plugins/%s.lua 的 config 必须是函数"):format(mod))
-    end
-    configs[#configs + 1] = { mod = mod, config = spec.config }
-    spec.config = nil -- 移出 spec，避免干扰 vim.pack 的字段处理
-    specs[#specs + 1] = spec
-  end
-end
-
-if #specs > 0 then
-  -- confirm = false：非交互环境（headless / CI）不阻塞在安装确认上，
-  -- 首次启动即按锁文件或 spec 版本装齐。
-  vim.pack.add(specs, { confirm = false })
-end
-
--- Snacks 全局在 require("snacks") 时建立；config 按文件名字典序执行，
--- gitsigns/which-key 等字母序在 snacks 之前的文件也依赖它，先建立。
-pcall(require, "snacks")
-
-for _, c in ipairs(configs) do
-  if c.config then
-    -- 错误直接上抛：启动失败必须可见，headless smoke 才能捕获
-    c.config()
-  end
-end
-
-require("config.autocmds")
-require("config.keymaps")
-
--- LazyVim 在 VeryLazy 阶段调用的 setup（行为源：config/init.lua:197-199）：
--- format.setup 注册 BufWritePre 自动格式化与 :LazyFormat 命令；
--- root.setup 注册根目录缓存失效 autocmd。
-require("meow.format").setup()
-require("meow.root").setup()
-
--- 插件更新后台检查（基线 lazy checker 闭环的等效复刻：每小时检查、
--- 仅经 lualine 计数呈现不发通知；打开更新列表用 dashboard l 或 <leader>l）
-require("meow.packcheck").start()
-
--- Omarchy 主题耦合（行为源：原 lua/plugins/theme.lua symlink +
--- omarchy-theme-hotreload.lua）：启动时应用当前主题（上游 spec 存在时
--- 覆盖 colorscheme.lua 的静态回退），随后 watch 父目录实现热重载。
-require("meow.theme").load()
-require("meow.theme").watch()
+    require("config.keymaps")
+    require("meow.format").setup()
+    require("meow.root").setup()
+  end,
+})

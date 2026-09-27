@@ -1,7 +1,7 @@
 ---@class meow.util
---- 本配置的工具层。行为源：LazyVim 16.0 lua/lazyvim/util/init.lua，
---- 但剥离全部 lazy.nvim 依赖（has/on_load/opts 等与 lazy spec 耦合的成员
---- 在各调用点按 vim.pack 语义改写，不再集中提供）。
+--- 本配置的工具层。行为源：LazyVim 16.0 lua/lazyvim/util/init.lua；
+--- 与 lazy.nvim 共存（has / safe_keymap_set 的 keys handler 探测已恢复，
+--- 行为与 LazyVim 同源）；其余成员在调用点挂 meow 命名空间。
 local M = {}
 
 -- 图标与 kind 过滤（meow/icons.lua）
@@ -26,6 +26,13 @@ setmetatable(M, {
 
 function M.is_win()
   return vim.uv.os_uname().sysname:find("Windows") ~= nil
+end
+
+--- spec 中存在的插件（查 spec 而非加载态；行为源：LazyVim util/init.lua M.has）。
+---@param plugin string
+---@return boolean
+function M.has(plugin)
+  return require("lazy.core.config").plugins[plugin] ~= nil
 end
 
 ---@param path string?
@@ -95,17 +102,32 @@ function M.statuscolumn()
   return package.loaded.snacks and require("snacks.statuscolumn").get() or ""
 end
 
---- vim.keymap.set 包装：默认 silent。
---- LazyVim 版本会探测 lazy 的 keys handler 以避免冲突——本配置无 lazy，
---- 直接走 Snacks.keymap（保留 ft/lsp/enabled 扩展字段的支持）。
+--- vim.keymap.set 包装：默认 silent；不覆盖已存在的 lazy keys handler
+---（行为源：LazyVim util/init.lua 的 safe_keymap_set，与 spec keys 冲突时
+--- 让位——trouble/bufferline 等 spec 键位由此保持生效）。
 ---@param mode string|string[]
 ---@param lhs string
 ---@param rhs string|function
 ---@param opts? vim.keymap.set.Opts
 function M.safe_keymap_set(mode, lhs, rhs, opts)
-  opts = opts or {}
-  opts.silent = opts.silent ~= false
-  Snacks.keymap.set(mode, lhs, rhs, opts)
+  local keys = require("lazy.core.handler").handlers.keys
+  ---@cast keys LazyKeysHandler
+  local modes = type(mode) == "string" and { mode } or mode
+
+  modes = vim.tbl_filter(function(m)
+    return not (keys.have and keys:have(lhs, m))
+  end, modes)
+
+  -- do not create the keymap if a lazy keys handler exists
+  if #modes > 0 then
+    opts = opts or {}
+    opts.silent = opts.silent ~= false
+    if opts.remap and not vim.g.vscode then
+      ---@diagnostic disable-next-line: no-unknown
+      opts.remap = nil
+    end
+    Snacks.keymap.set(modes, lhs, rhs, opts)
+  end
 end
 
 ---@param list any[]

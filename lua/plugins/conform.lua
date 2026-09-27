@@ -1,13 +1,47 @@
--- conform：格式化。行为源：LazyVim plugins/formatting.lua。
--- 差异：LazyVim.format.register 走 meow.format；on_very_lazy 延迟注册改为
--- 直接注册（vim.pack 全量加载，无需 VeryLazy）。
+-- conform：格式化。行为源：LazyVim plugins/formatting.lua 的 spec 形态
+-- （dependencies/lazy/cmd/keys/init 全镜像；注册段走 User VeryLazy，
+-- 与基线 on_very_lazy 等价——init 在启动期执行，注册早于任何触发）。
 return {
-  src = "https://github.com/stevearc/conform.nvim",
-  name = "conform.nvim",
+  "https://github.com/stevearc/conform.nvim",
+  dependencies = { "mason.nvim" },
+  lazy = true,
+  cmd = "ConformInfo",
+  -- stylua: ignore
+  keys = {
+    {
+      "<leader>cF",
+      function()
+        require("conform").format({ formatters = { "injected" }, timeout_ms = 3000 })
+      end,
+      mode = { "n", "x" },
+      desc = "Format Injected Langs",
+    },
+  },
+  init = function()
+    -- 注册进 meow.format（行为源：LazyVim formatting.lua 的 on_very_lazy 段；
+    -- 闭包在调用时按需 require，require 会触发 conform 加载）
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "VeryLazy",
+      once = true,
+      callback = function()
+        require("meow.format").register({
+          name = "conform.nvim",
+          priority = 100,
+          primary = true,
+          format = function(buf)
+            require("conform").format({ bufnr = buf })
+          end,
+          sources = function(buf)
+            local ret = require("conform").list_formatters(buf)
+            return vim.tbl_map(function(v)
+              return v.name
+            end, ret)
+          end,
+        })
+      end,
+    })
+  end,
   config = function()
-    local meow = require("meow")
-
-    -- LazyVim 的 conform setup 包装：拦截误用 format_on_save 的配置
     local opts = {
       default_format_opts = {
         timeout_ms = 3000,
@@ -25,26 +59,5 @@ return {
       },
     }
     require("conform").setup(opts)
-
-    -- 注册进 meow.format（LazyVim：conform init 的 on_very_lazy 段）
-    meow.format.register({
-      name = "conform.nvim",
-      priority = 100,
-      primary = true,
-      format = function(buf)
-        require("conform").format({ bufnr = buf })
-      end,
-      sources = function(buf)
-        local ret = require("conform").list_formatters(buf)
-        return vim.tbl_map(function(v)
-          return v.name
-        end, ret)
-      end,
-    })
-
-    -- LazyVim formatting.lua 的 keymaps
-    vim.keymap.set({ "n", "x" }, "<leader>cF", function()
-      require("conform").format({ formatters = { "injected" }, timeout_ms = 3000 })
-    end, { desc = "Format Injected Langs", silent = true })
   end,
 }

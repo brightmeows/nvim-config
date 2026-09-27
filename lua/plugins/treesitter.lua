@@ -1,11 +1,22 @@
 -- treesitter 域：nvim-treesitter（main 分支）+ textobjects + autotag。
--- 行为源：LazyVim plugins/treesitter.lua。
--- 差异：LazyVim.treesitter.* → meow.treesitter.*；build 事件（lazy 专用）改为
--- 启动时缺啥装啥；LazyVim.error → meow.error。
+-- 行为源：LazyVim plugins/treesitter.lua（event/cmd/build 镜像；branch 默认
+-- 即 main，锁文件钉 rev）。
+-- 差异：LazyVim.treesitter.* → meow.treesitter.*；LazyVim.error → meow.error。
 return {
   {
-    src = "https://github.com/nvim-treesitter/nvim-treesitter",
-    name = "nvim-treesitter",
+    "https://github.com/nvim-treesitter/nvim-treesitter",
+    event = { "LazyFile", "VeryLazy" },
+    cmd = { "TSUpdate", "TSInstall", "TSLog", "TSUninstall" },
+    build = function()
+      -- 行为源：LazyVim treesitter.lua 的 build 钩子（更新后同步 parser）
+      local TS = require("nvim-treesitter")
+      if not TS.get_installed then
+        return require("meow").error("请重启并运行 :TSUpdate 以使用 nvim-treesitter main 分支")
+      end
+      require("meow").treesitter.build(function()
+        TS.update(nil, { summary = true })
+      end)
+    end,
     config = function()
       local meow = require("meow")
       local TS = require("nvim-treesitter")
@@ -48,7 +59,7 @@ return {
       TS.setup(opts)
       meow.treesitter.get_installed(true) -- initialize the installed langs
 
-      -- 安装缺失 parser（LazyVim build 钩子的等效：启动时检查）
+      -- 安装缺失 parser（保持现行行为：加载时缺啥装啥，与 build 钩子并存）
       local install = vim.tbl_filter(function(lang)
         return not meow.treesitter.have(lang)
       end, opts.ensure_installed or {})
@@ -98,8 +109,8 @@ return {
     end,
   },
   {
-    src = "https://github.com/nvim-treesitter/nvim-treesitter-textobjects",
-    name = "nvim-treesitter-textobjects",
+    "https://github.com/nvim-treesitter/nvim-treesitter-textobjects",
+    event = "VeryLazy",
     config = function()
       local meow = require("meow")
       local opts = {
@@ -165,8 +176,8 @@ return {
     end,
   },
   {
-    src = "https://github.com/windwp/nvim-ts-autotag",
-    name = "nvim-ts-autotag",
+    "https://github.com/windwp/nvim-ts-autotag",
+    event = "LazyFile",
     config = function()
       require("nvim-ts-autotag").setup({})
     end,

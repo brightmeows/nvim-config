@@ -1,8 +1,8 @@
--- nvim-lint：lint。行为源：LazyVim plugins/linting.lua（config 全文搬运，
--- LazyVim.warn → meow.warn）。
+-- nvim-lint：lint。行为源：LazyVim plugins/linting.lua（event=LazyFile 触发 +
+-- config 全文搬运，LazyVim.warn → meow.warn）。
 return {
-  src = "https://github.com/mfussenegger/nvim-lint",
-  name = "nvim-lint",
+  "https://github.com/mfussenegger/nvim-lint",
+  event = "LazyFile",
   config = function()
     local opts = {
       -- Event to trigger linters

@@ -1,5 +1,6 @@
 -- 行为源：LazyVim 16.0 lua/lazyvim/config/autocmds.lua（字节级搬运）。
 -- 差异：augroup 前缀 lazyvim_ → meow_（仅命名，行为不变）。
+-- 加载时机：argc>0 时启动早加载，否则 VeryLazy（行为源同款，见 init.lua）。
 
 local function augroup(name)
   return vim.api.nvim_create_augroup("meow_" .. name, { clear = true })
@@ -128,29 +129,5 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
     end
     local file = vim.uv.fs_realpath(event.match) or event.match
     vim.fn.mkdir(vim.fn.fnamemodify(file, ":p:h"), "p")
-  end,
-})
-
--- vim.pack 确认页操作提示（非 LazyVim 来源——vim.pack 的新增 UX 补丁）。
--- :write/:quit 的约定无处可见，确认页打开时把提示写进缓冲首行
--- （show_confirm_buf 一次性写入后才设 filetype，此刻插入安全；
--- get_update_map 只解析 `^# `/`^## ` 开头的行，提示行不匹配故不影响应用）。
-local pack_hint_ns = vim.api.nvim_create_namespace("meow.pack_hint")
-vim.api.nvim_create_autocmd("FileType", {
-  group = augroup("pack_confirm_hint"),
-  pattern = "nvim-pack",
-  callback = function(event)
-    local buf = event.buf
-    local hint = " vim.pack 确认页：:w 应用更新 · :q 放弃 · [[ / ]] 逐插件审阅"
-    pcall(function()
-      vim.bo[buf].modifiable = true
-      vim.api.nvim_buf_set_lines(buf, 0, 0, false, { hint })
-      vim.bo[buf].modifiable = false
-      vim.bo[buf].modified = false
-      -- 整行高亮使其在确认页中醒目
-      vim.api.nvim_buf_set_extmark(buf, pack_hint_ns, 0, 0, {
-        line_hl_group = "MoreMsg",
-      })
-    end)
   end,
 })

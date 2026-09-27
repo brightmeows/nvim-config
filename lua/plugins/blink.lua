@@ -1,102 +1,96 @@
--- blink.cmp：补全。行为源：LazyVim extras/coding/blink.lua。
+-- blink.cmp：补全。行为源：LazyVim extras/coding/blink.lua 的 spec 触发
+-- （event + dependencies），config 为本配置的移植实现。
 -- 差异：LazyVim.cmp.* → meow.cmp.*；kind_icons 走 meow.icons；
 -- catppuccin 的 blink_cmp 集成并入主题文件。
--- blink 版本：基线锁 main 分支 commit（vim.pack 默认分支同）。
+-- 版本钉法：tag 钉在基线 lazy-lock 的 v1.10.2（78336bc）：v2 主分支需要
+-- 额外的 blink.lib 包，属 breaking 依赖变更，零感知迁移不随上游升级。
 return {
-  {
-    src = "https://github.com/saghen/blink.cmp",
-    name = "blink.cmp",
-    -- 钉在基线 lazy-lock 的 tag（v1.10.2）：v2 主分支需要额外的 blink.lib 包，
-    -- 属 breaking 依赖变更，零感知迁移不随上游升级。
-    version = "v1.10.2",
-    config = function()
-      local meow = require("meow")
-      ---@type blink.cmp.Config
-      local opts = {
-        snippets = {
-          preset = "default",
-          expand = function(snippet)
-            meow.cmp.expand(snippet)
-          end,
+  "https://github.com/saghen/blink.cmp",
+  event = { "InsertEnter", "CmdlineEnter" },
+  dependencies = { "rafamadriz/friendly-snippets" },
+  tag = "v1.10.2",
+  config = function()
+    local meow = require("meow")
+    ---@type blink.cmp.Config
+    local opts = {
+      snippets = {
+        preset = "default",
+        expand = function(snippet)
+          meow.cmp.expand(snippet)
+        end,
+      },
+      appearance = {
+        use_nvim_cmp_as_default = false,
+        nerd_font_variant = "mono",
+        kind_icons = vim.tbl_extend("force", {}, meow.icons.kinds),
+      },
+      completion = {
+        accept = {
+          auto_brackets = { enabled = true },
         },
-        appearance = {
-          use_nvim_cmp_as_default = false,
-          nerd_font_variant = "mono",
-          kind_icons = vim.tbl_extend("force", {}, meow.icons.kinds),
+        menu = {
+          draw = { treesitter = { "lsp" } },
+        },
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 200,
+        },
+        ghost_text = {
+          enabled = vim.g.ai_cmp,
+        },
+      },
+      sources = {
+        compat = {},
+        default = { "lsp", "path", "snippets", "buffer" },
+        per_filetype = {
+          lua = { inherit_defaults = true, "lazydev" },
+        },
+        providers = {
+          lazydev = {
+            name = "LazyDev",
+            module = "lazydev.integrations.blink",
+            score_offset = 100,
+          },
+        },
+      },
+      cmdline = {
+        enabled = true,
+        keymap = {
+          preset = "cmdline",
+          ["<Right>"] = false,
+          ["<Left>"] = false,
         },
         completion = {
-          accept = {
-            auto_brackets = { enabled = true },
-          },
+          list = { selection = { preselect = false } },
           menu = {
-            draw = { treesitter = { "lsp" } },
+            auto_show = function(_ctx)
+              return vim.fn.getcmdtype() == ":"
+            end,
           },
-          documentation = {
-            auto_show = true,
-            auto_show_delay_ms = 200,
-          },
-          ghost_text = {
-            enabled = vim.g.ai_cmp,
-          },
+          ghost_text = { enabled = true },
         },
-        sources = {
-          compat = {},
-          default = { "lsp", "path", "snippets", "buffer" },
-          per_filetype = {
-            lua = { inherit_defaults = true, "lazydev" },
-          },
-          providers = {
-            lazydev = {
-              name = "LazyDev",
-              module = "lazydev.integrations.blink",
-              score_offset = 100,
-            },
-          },
-        },
-        cmdline = {
-          enabled = true,
-          keymap = {
-            preset = "cmdline",
-            ["<Right>"] = false,
-            ["<Left>"] = false,
-          },
-          completion = {
-            list = { selection = { preselect = false } },
-            menu = {
-              auto_show = function(_ctx)
-                return vim.fn.getcmdtype() == ":"
-              end,
-            },
-            ghost_text = { enabled = true },
-          },
-        },
-        keymap = {
-          preset = "enter",
-          ["<C-y>"] = { "select_and_accept" },
-        },
+      },
+      keymap = {
+        preset = "enter",
+        ["<C-y>"] = { "select_and_accept" },
+      },
+    }
+
+    -- Tab 键：snippet 前进 fallback（LazyVim cmp.map 同款，去掉 ai_nes/ai_accept——
+    -- 本配置无 AI inline suggestion 来源）
+    if not opts.keymap["<Tab>"] then
+      opts.keymap["<Tab>"] = {
+        meow.cmp.map({ "snippet_forward" }),
+        "fallback",
       }
+    end
 
-      -- Tab 键：snippet 前进 fallback（LazyVim cmp.map 同款，去掉 ai_nes/ai_accept——
-      -- 本配置无 AI inline suggestion 来源）
-      if not opts.keymap["<Tab>"] then
-        opts.keymap["<Tab>"] = {
-          meow.cmp.map({ "snippet_forward" }),
-          "fallback",
-        }
-      end
+    -- compat 是 LazyVim 的扩展字段（blink.compat 源适配），非 blink schema
+    -- 成员——setup 前必须清掉才能过校验（基线同款：
+    -- "Unset custom prop to pass blink.cmp validation"）。本配置无 compat
+    -- 源，保留字段仅为结构与基线一致。
+    opts.sources.compat = nil
 
-      -- compat 是 LazyVim 的扩展字段（blink.compat 源适配），非 blink schema
-      -- 成员——setup 前必须清掉才能过校验（基线同款：
-      -- "Unset custom prop to pass blink.cmp validation"）。本配置无 compat
-      -- 源，保留字段仅为结构与基线一致。
-      opts.sources.compat = nil
-
-      require("blink.cmp").setup(opts)
-    end,
-  },
-  {
-    src = "https://github.com/rafamadriz/friendly-snippets",
-    name = "friendly-snippets",
-    -- 片段库由 blink 的 snippets preset 自动从 rtp 读取，无需 config
-  },
+    require("blink.cmp").setup(opts)
+  end,
 }

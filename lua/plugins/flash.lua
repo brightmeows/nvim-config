@@ -1,29 +1,27 @@
--- flash：跳转。行为源：LazyVim plugins/editor.lua 的 flash spec。
+-- flash：跳转。行为源：LazyVim plugins/editor.lua 的 flash spec
+-- （event=VeryLazy + keys 字段，键位与基线逐条一致）。
 return {
-  src = "https://github.com/folke/flash.nvim",
-  name = "flash.nvim",
+  "https://github.com/folke/flash.nvim",
+  event = "VeryLazy",
+  -- stylua: ignore
+  keys = {
+    { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
+    { "S", mode = { "n", "o", "x" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+    { "r", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
+    { "R", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
+    { "<c-s>", mode = "c", function() require("flash").toggle() end, desc = "Toggle Flash Search" },
+    -- Simulate nvim-treesitter incremental selection
+    { "<c-space>", mode = { "n", "o", "x" },
+      function()
+        require("flash").treesitter({
+          actions = {
+            ["<c-space>"] = "next",
+            ["<BS>"] = "prev",
+          },
+        })
+      end, desc = "Treesitter Incremental Selection" },
+  },
   config = function()
     require("flash").setup({})
-    local function map(mode, lhs, rhs, desc)
-      vim.keymap.set(mode, lhs, rhs, { desc = desc, silent = true })
-    end
-    map({ "n", "x", "o" }, "s", function()
-      require("flash").jump()
-    end, "Flash")
-    map({ "n", "o", "x" }, "S", function()
-      require("flash").treesitter()
-    end, "Flash Treesitter")
-    map("o", "r", function()
-      require("flash").remote()
-    end, "Remote Flash")
-    map({ "o", "x" }, "R", function()
-      require("flash").treesitter_search()
-    end, "Treesitter Search")
-    map("c", "<c-s>", function()
-      require("flash").toggle()
-    end, "Toggle Flash Search")
-    map({ "n", "o", "x" }, "<c-space>", function()
-      require("flash").treesitter({ actions = { ["<c-space>"] = "next", ["<BS>"] = "prev" } })
-    end, "Treesitter Incremental Selection")
   end,
 }

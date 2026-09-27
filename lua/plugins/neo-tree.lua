@@ -1,8 +1,65 @@
--- neo-tree：文件树（启用的 explorer extra）。行为源：LazyVim extras/editor/neo-tree.lua。
--- 差异：Snacks.rename/LazyVim.root 保留；deactivate（lazy 卸载钩子）移除。
+-- neo-tree：文件树（启用的 explorer extra）。行为源：LazyVim extras/editor/
+-- neo-tree.lua（cmd + keys + init 的目录参数加载钩子迁出 config；deactivate
+-- 卸载钩子恢复——lazy 卸载场景的等效物）。
 return {
-  src = "https://github.com/nvim-neo-tree/neo-tree.nvim",
-  name = "neo-tree.nvim",
+  "https://github.com/nvim-neo-tree/neo-tree.nvim",
+  cmd = "Neotree",
+  -- stylua: ignore
+  keys = {
+    {
+      "<leader>fe",
+      function()
+        require("neo-tree.command").execute({ toggle = true, dir = require("meow.root")() })
+      end,
+      desc = "Explorer NeoTree (Root Dir)",
+    },
+    {
+      "<leader>fE",
+      function()
+        require("neo-tree.command").execute({ toggle = true, dir = vim.uv.cwd() })
+      end,
+      desc = "Explorer NeoTree (cwd)",
+    },
+    { "<leader>e", "<leader>fe", desc = "Explorer NeoTree (Root Dir)", remap = true },
+    { "<leader>E", "<leader>fE", desc = "Explorer NeoTree (cwd)", remap = true },
+    {
+      "<leader>ge",
+      function()
+        require("neo-tree.command").execute({ source = "git_status", toggle = true })
+      end,
+      desc = "Git Explorer",
+    },
+    {
+      "<leader>be",
+      function()
+        require("neo-tree.command").execute({ source = "buffers", toggle = true })
+      end,
+      desc = "Buffer Explorer",
+    },
+  },
+  deactivate = function()
+    vim.cmd([[Neotree close]])
+  end,
+  init = function()
+    -- FIX: use `autocmd` for lazy-loading neo-tree instead of directly requiring it,
+    -- because `cwd` is not set up properly.（LazyVim 同款——启动期注册，
+    -- 以目录参数启动时按需加载）
+    vim.api.nvim_create_autocmd("BufEnter", {
+      group = vim.api.nvim_create_augroup("Neotree_start_directory", { clear = true }),
+      desc = "Start Neo-tree with directory",
+      once = true,
+      callback = function()
+        if package.loaded["neo-tree"] then
+          return
+        else
+          local stats = vim.uv.fs_stat(vim.fn.argv(0))
+          if stats and stats.type == "directory" then
+            require("neo-tree")
+          end
+        end
+      end,
+    })
+  end,
   config = function()
     local opts = {
       sources = { "filesystem", "buffers", "git_status" },
@@ -69,46 +126,5 @@ return {
         end
       end,
     })
-
-    -- 以目录参数启动时打开 neo-tree（LazyVim init 段同款）
-    vim.api.nvim_create_autocmd("BufEnter", {
-      group = vim.api.nvim_create_augroup("Neotree_start_directory", { clear = true }),
-      desc = "Start Neo-tree with directory",
-      once = true,
-      callback = function()
-        if package.loaded["neo-tree"] then
-          return
-        else
-          local stats = vim.uv.fs_stat(vim.fn.argv(0))
-          if stats and stats.type == "directory" then
-            require("neo-tree")
-          end
-        end
-      end,
-    })
-
-    -- LazyVim neo-tree extra 的 keymaps
-    local function map(lhs, rhs, desc)
-      vim.keymap.set("n", lhs, rhs, { desc = desc, silent = true })
-    end
-    map("<leader>fe", function()
-      require("neo-tree.command").execute({ toggle = true, dir = require("meow.root")() })
-    end, "Explorer NeoTree (Root Dir)")
-    map("<leader>fE", function()
-      require("neo-tree.command").execute({ toggle = true, dir = vim.uv.cwd() })
-    end, "Explorer NeoTree (cwd)")
-    vim.keymap.set(
-      "n",
-      "<leader>e",
-      "<leader>fe",
-      { desc = "Explorer NeoTree (Root Dir)", remap = true, silent = true }
-    )
-    vim.keymap.set("n", "<leader>E", "<leader>fE", { desc = "Explorer NeoTree (cwd)", remap = true, silent = true })
-    map("<leader>ge", function()
-      require("neo-tree.command").execute({ source = "git_status", toggle = true })
-    end, "Git Explorer")
-    map("<leader>be", function()
-      require("neo-tree.command").execute({ source = "buffers", toggle = true })
-    end, "Buffer Explorer")
   end,
 }

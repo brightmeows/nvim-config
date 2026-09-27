@@ -25,7 +25,9 @@ function M.register(formatter)
 end
 
 function M.formatexpr()
-  if package.loaded["conform"] or vim.fn.exists(":ConformInfo") == 2 then
+  -- 行为源：LazyVim util/format.lua——conform 在 spec 即用即 require
+  --（require 会触发未加载插件的加载），不存在则退回 lsp formatexpr
+  if LazyVim.has("conform.nvim") then
     return require("conform").formatexpr()
   end
   return vim.lsp.formatexpr({ timeout_ms = 3000 })

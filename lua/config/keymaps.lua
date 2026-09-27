@@ -1,6 +1,6 @@
 -- 行为源：LazyVim 16.0 lua/lazyvim/config/keymaps.lua（字节级搬运后定向改写）。
--- 差异：LazyVim.* → meow.*；:Lazy → vim.pack.update()；LazyVim changelog → Neovim news；
--- lazygit 根目录检测改走 meow.root。
+-- 差异：LazyVim.* → meow.*；LazyVim changelog → Neovim news（发行版已移除）；
+-- lazygit 根目录检测改走 meow.root。加载时机：VeryLazy（行为源同款，见 init.lua）。
 local map = require("meow").safe_keymap_set
 
 -- better up/down
@@ -91,9 +91,7 @@ map("n", "gco", "o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Commen
 map("n", "gcO", "O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Comment Above" })
 
 -- lazy
-map("n", "<leader>l", function()
-  vim.pack.update()
-end, { desc = "Update Plugins" })
+map("n", "<leader>l", "<cmd>Lazy<cr>", { desc = "Lazy" })
 
 -- new file
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
@@ -114,9 +112,10 @@ map("n", "<leader>xq", function()
   end
 end, { desc = "Quickfix List" })
 
--- [q/]q 原在此处（vim.cmd.cprev/cnext）；基线真值为 trouble 版本
--- （desc "Previous Trouble/Quickfix Item"，含 is_open 分支），已由
--- lua/plugins/trouble.lua 注册，此处不再覆盖。
+-- [q/]q：恢复基线行；trouble 的 keys handler 存在时 safe_keymap_set 会跳过
+-- （基线同机制——最终生效的是 trouble 版本，见 plugins/trouble.lua）
+map("n", "[q", vim.cmd.cprev, { desc = "Previous Quickfix" })
+map("n", "]q", vim.cmd.cnext, { desc = "Next Quickfix" })
 
 -- formatting
 map({ "n", "x" }, "<leader>cf", function()
