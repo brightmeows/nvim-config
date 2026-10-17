@@ -43,6 +43,8 @@ colorscheme 件走 lazy=true。
 - [x] VeryLazy 链路：keymaps/autocmds/format/root setup 于 VeryLazy 执行
   （`:LazyFormat` 存在、formatter 已注册）
 - [x] 键位抽查齐全：`<leader>xx / sr / qs / fe / , / ?`
+- [x] `<leader>gj`/`<leader>gJ` = jjui 浮窗（Snacks.terminal，executable 守卫；
+  Root Dir 走 `meow.root.git()`；自增功能非复刻项）
 - [x] mason 的 cmd/keys/build 与安装后 FileType 重触发恢复；mason-lspconfig
   以依赖占位空 config 形态回归（LazyVim 同构）
 - [ ] 打开文件触发 BufReadPre 链（lsp、mason 随依赖加载）与 LazyFile 链
