@@ -137,17 +137,31 @@ function M.ensure_treesitter_cli(cb)
     local p = mr.get_package("tree-sitter-cli")
     if not p:is_installed() then
       LazyVim.info("Installing `tree-sitter-cli` with `mason.nvim`...")
-      p:install(
-        nil,
-        vim.schedule_wrap(function(success)
-          if success then
-            LazyVim.info("Installed `tree-sitter-cli` with `mason.nvim`.")
-            cb(true)
-          else
-            cb(false, "Failed to install `tree-sitter-cli` with `mason.nvim`.")
-          end
-        end)
-      )
+      -- pcall 防 mason build 钩子并发双装（"Package is already installing"，
+      -- 2026-10-17 CI settle 阶段实测）：已在装则轮询等它收敛，不重复入队。
+      local ok, err = pcall(function()
+        p:install(
+          nil,
+          vim.schedule_wrap(function(success)
+            if success then
+              LazyVim.info("Installed `tree-sitter-cli` with `mason.nvim`.")
+              cb(true)
+            else
+              cb(false, "Failed to install `tree-sitter-cli` with `mason.nvim`.")
+            end
+          end)
+        )
+      end)
+      if not ok then
+        if tostring(err):find("already installing", 1, true) then
+          vim.wait(120000, function()
+            return p:is_installed()
+          end, 500)
+          cb(p:is_installed())
+        else
+          cb(false, tostring(err))
+        end
+      end
     end
   end)
 end

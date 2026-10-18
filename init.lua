@@ -29,6 +29,19 @@ if not vim.uv.fs_stat(lazypath) then
     os.exit(1)
   end
 end
+-- 锁对齐（2026-10-17 CI lockfile job 失败根因）：bootstrap 落点是 stable 分支 HEAD，
+-- 而 lazy-lock.json 锁的 lazy.nvim 可能已随同步升到 main 分支 commit——首克隆 HEAD 与
+-- 锁分叉，verify-lockfile 必挂。首克隆后立即按锁 checkout（lock 无该条目时不动）。
+do
+  local lock_path = vim.fs.joinpath(vim.fn.stdpath("config"), "lazy-lock.json")
+  if vim.uv.fs_stat(lock_path) then
+    local ok, lock = pcall(vim.json.decode, table.concat(vim.fn.readfile(lock_path), "\n"))
+    local commit = ok and type(lock) and lock["lazy.nvim"] and lock["lazy.nvim"].commit
+    if commit then
+      vim.fn.system({ "git", "-C", lazypath, "checkout", "--detach", commit, "-q" })
+    end
+  end
+end
 vim.opt.rtp:prepend(lazypath)
 
 -- LazyFile 事件 glue（行为源：lazyvim/util/plugin.lua M.lazy_file，
