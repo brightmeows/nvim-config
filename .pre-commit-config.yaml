@@ -5,6 +5,8 @@
 # language: system：全部调本机 PATH 二进制，无上游钩子仓库、无网络、无环境预热。
 # fail_fast：对齐原 set -e 短路语义——首钩失败即中止、后续不跑
 # （pre-commit 默认会跑完全部钩子再汇总，此项是 1:1 复刻的关键）。
+# 分三个阶段：pre-commit 只跑格式与静态检查；commit-msg 校验提交信息骨架；
+# pre-push 串行为类判据（强测 smoke、meow 单元、锁与 spec 一致性）。
 fail_fast: true
 repos:
   - repo: local
@@ -13,11 +15,40 @@ repos:
         name: stylua --check .
         entry: stylua --check .
         language: system
+        stages: [pre-commit]
         pass_filenames: false
         always_run: true
       - id: selene
         name: selene lua init.lua plugin scripts
         entry: selene lua init.lua plugin scripts
         language: system
+        stages: [pre-commit]
         pass_filenames: false
         always_run: true
+      - id: commit-msg
+        name: commit message 骨架
+        entry: nvim -l scripts/check-commit-msg.lua
+        language: system
+        always_run: true
+        stages: [commit-msg]
+      - id: smoke
+        name: strong smoke（自判）
+        entry: nvim --headless -c 'luafile scripts/strong-smoke.lua' -c 'qa!'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: meow-tests
+        name: meow 单元测试
+        entry: nvim -l scripts/test-meow.lua
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: lockfile
+        name: 锁与 spec 一致性
+        entry: nvim -l scripts/verify-lockfile.lua
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
