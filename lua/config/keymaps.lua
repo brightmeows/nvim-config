@@ -224,6 +224,9 @@ map({ "n", "x" }, "<leader>gY", function()
     notify = false,
   })
 end, { desc = "Git Browse (copy)" })
+map("n", "<leader>gW", function()
+  require("meow.worktree").picker()
+end, { desc = "Switch Worktree" })
 
 -- quit
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit All" })

@@ -76,6 +76,50 @@ ok(type(lockguard.STARTUP_DELAY) == "number" and lockguard.STARTUP_DELAY > 0, "l
 ok(type(lockguard.CONCURRENCY) == "number" and lockguard.CONCURRENCY > 0, "lockguard 并发为正数")
 ok(type(lockguard.TIMEOUT) == "number" and lockguard.TIMEOUT > 0, "lockguard 超时为正数")
 
+local worktree = require("meow.worktree")
+local porcelain = table.concat({
+  "worktree /repo/main",
+  "HEAD 1111111111111111111111111111111111111111",
+  "branch refs/heads/main",
+  "",
+  "worktree /repo/feature",
+  "HEAD 2222222222222222222222222222222222222222",
+  "branch refs/heads/feature/x",
+  "locked in use",
+  "",
+  "worktree /repo/detached",
+  "HEAD 3333333333333333333333333333333333333333",
+  "detached",
+  "",
+  "worktree /repo/gone",
+  "HEAD 4444444444444444444444444444444444444444",
+  "branch refs/heads/gone",
+  "prunable gitdir file points to non-existent location",
+  "",
+  "worktree /repo/bare.git",
+  "HEAD 5555555555555555555555555555555555555555",
+  "bare",
+  "",
+}, "\n")
+
+local trees = worktree.parse(porcelain)
+eq(#trees, 5, "worktree.parse 条目数")
+eq(trees[1].path, "/repo/main", "worktree.parse 主树路径")
+eq(trees[1].branch, "main", "worktree.parse 去 refs/heads 前缀")
+eq(trees[1].detached, nil, "worktree.parse 主树非 detached")
+eq(trees[2].branch, "feature/x", "worktree.parse 分支带斜杠")
+eq(trees[2].locked, "in use", "worktree.parse locked 带原因")
+eq(trees[3].detached, true, "worktree.parse detached")
+eq(trees[4].prunable, "gitdir file points to non-existent location", "worktree.parse prunable 带原因")
+eq(trees[5].bare, true, "worktree.parse bare")
+eq(worktree.parse(""), {}, "worktree.parse 空输出")
+eq(
+  worktree.parse("worktree /a\r\nHEAD x\r\nbranch refs/heads/a\r\n"),
+  { { path = "/a", head = "x", branch = "a" } },
+  "worktree.parse CRLF 与无尾空行"
+)
+eq(worktree.parse("worktree /b\nHEAD y\nlocked\n\n")[1].locked, true, "worktree.parse locked 无原因")
+
 if #failed > 0 then
   print("MEOW-TESTS-FAIL " .. #failed)
   for _, msg in ipairs(failed) do

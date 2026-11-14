@@ -102,5 +102,6 @@ vim.api.nvim_create_autocmd("User", {
     require("config.keymaps")
     require("meow.format").setup()
     require("meow.root").setup()
+    require("meow.worktree").setup()
   end,
 })
