@@ -1,6 +1,7 @@
 -- 强测 smoke：headless 下把插件加载面拉满，替代“只测启动路径”的弱 smoke。
 -- 用法：nvim --headless -c 'luafile scripts/strong-smoke.lua' -c 'qa!'
--- 判据与弱 smoke 同源：退出码 0 且输出无 Error。
+-- 判据自判：fire 失败、未载入、消息区出现 Error 或 E 码时 cquit 1；正常时打印
+-- STRONG-SMOKE-OK。外层只需看退出码，不再依赖外部 grep。
 --
 -- 机制：事件触发加程序化补载双保险——headless 无 UIEnter，lazy 的 VeryLazy
 -- 自动路径不会走到，手动触发对齐真实 TUI 语义；随后对仍未加载的插件
@@ -9,10 +10,17 @@
 local Config = require("lazy.core.config")
 local Loader = require("lazy.core.loader")
 
+local failures = {}
+
+local function fail(msg)
+  failures[#failures + 1] = msg
+end
+
 local function fire(event, opts)
   local ok, err = pcall(vim.api.nvim_exec_autocmds, event, opts or {})
   if not ok then
     print(("SMOKE-FIRE-FAIL %s: %s"):format(event, tostring(err)))
+    fail(("fire %s"):format(event))
   end
 end
 
@@ -55,5 +63,27 @@ table.sort(stuck)
 print(("STRONG-SMOKE loaded %d/%d"):format(loaded, total))
 if #stuck > 0 then
   print("STRONG-SMOKE-NOT-LOADED " .. table.concat(stuck, ","))
+  fail(("%d 件未载入"):format(#stuck))
 end
-print("STRONG-SMOKE-DONE")
+
+-- 消息区兜底：init 报错在 headless 下不会改变退出码，只能读 :messages
+local msgs = vim.api.nvim_exec2("messages", { output = true }).output or ""
+local err_lines = {}
+for line in msgs:gmatch("[^\n]+") do
+  if line:match("^E%d+:") or line:find("Error", 1, true) then
+    err_lines[#err_lines + 1] = line
+  end
+end
+if #err_lines > 0 then
+  print("STRONG-SMOKE-ERRORS " .. #err_lines)
+  for _, line in ipairs(err_lines) do
+    print("  " .. line)
+  end
+  fail(("%d 条错误消息"):format(#err_lines))
+end
+
+if #failures > 0 then
+  print(("STRONG-SMOKE-FAIL %d 项：%s"):format(#failures, table.concat(failures, "；")))
+  vim.cmd("cquit 1")
+end
+print("STRONG-SMOKE-OK")
