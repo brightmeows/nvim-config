@@ -34,6 +34,17 @@ jobs:
       - name: pre-commit run --all-files（与本地钩子同源）
         run: pre-commit run --all-files
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          version: stable
+          neovim: true
+      - name: 文档与命令串同源
+        run: nvim -l scripts/check-docs-sync.lua
+
   smoke:
     strategy:
       fail-fast: false
@@ -91,6 +102,8 @@ jobs:
             exit 1
           fi
           echo "strong smoke OK"
+      - name: meow 单元测试
+        run: nvim -l scripts/test-meow.lua
 
   lockfile:
     runs-on: ubuntu-latest
@@ -116,3 +129,27 @@ jobs:
           -c 'qa!'
       - name: Verify installed git HEADs match lockfile
         run: nvim -l scripts/verify-lockfile.lua
+
+  nightly:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          version: nightly
+          neovim: true
+      - name: Place config at nvim stdpath('config')
+        run: |
+          mkdir -p "$HOME/.config/nvim"
+          cp -R "$GITHUB_WORKSPACE"/. "$HOME/.config/nvim"/
+          test -f "$HOME/.config/nvim/init.lua" && echo "config in place"
+      - name: Install plugins per lockfile and settle mason installs
+        run: >-
+          nvim --headless
+          -c 'luafile scripts/settle-installs.lua'
+          -c 'qa!'
+      - name: Strong smoke（自判）
+        run: nvim --headless -c 'luafile scripts/strong-smoke.lua' -c 'qa!'
+      - name: meow 单元测试
+        run: nvim -l scripts/test-meow.lua
