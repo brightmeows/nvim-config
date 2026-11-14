@@ -213,3 +213,63 @@ colorscheme 件走 lazy=true。
 - [x] `~/.local/share/nvim/site/pack` 已移出并删除（vim.pack 启动会自动重写
   nvim-pack-lock.json，移出后不再再生；129M 备份在 CI 首绿后删除，
   插件可由 git 远端重装，回退锚点为 tag `vim-pack-final`）
+
+## 十九、自增功能：接口大纲、完整 diff、工作树
+
+第十七节的“49 件集合不变”是 lazy 切换任务的范围；本节是其后新增的功能，
+显式打破该集合。当前 `lazy-lock.json` 52 条（51 插件 + lazy.nvim），行为源
+仍是 LazyVim 16.0，新增件标为自增。
+
+### 接口大纲与项目 API
+
+- [x] `outline.nvim` 接管 `<leader>cs`，右侧栏打开，LSP `detail` 作为虚拟文本；
+  trouble symbols 改由 `:Trouble symbols` 进入，trouble 其余键与 lualine 符号不变。
+- [x] 当前文件过滤沿用 `meow.kind_filter`，保留 Field 与 Property；outline 打开
+  不抢焦点；LSP client 晚于 outline 打开时，`LspAttach` 触发 refresh，并在
+  2s 与 8s 各补一次重试（headless 验证）。
+- [x] `<leader>sA` 打开项目 API 符号，严格过滤 Class、Constructor、Enum、
+  Function、Interface、Method、Module、Namespace、Struct、Trait；lua 排除
+  Package；格式化附带 `detail`。
+- [x] `<leader>ss` 与 `<leader>sS` 仍为全量，行为未变。
+- [x] 补充键位：`<leader>cT` trouble symbols、`<leader>cO` outline focus、
+  `<leader>gC` git branches、`<leader>gT` diffview toggle、`<leader>gO` diffview log、
+  `<leader>sI` LSP declarations、`<leader>sP` pickers、`<leader>uB` line blame toggle。
+  `sI` 始终注册；server 不支持 declaration 时列表为空。
+- [ ] TUI 实操：outline 的 preview、hover、跳转与折叠。
+
+### 完整 diff
+
+- [x] `diffview-plus.nvim` 接管 `<leader>gv`（`:DiffviewOpen`）与
+  `<leader>gV`（`:DiffviewFileHistory %`）。
+- [x] 文件面板 `<cr>`、`<tab>`、`gf`、`-`、`g<C-x>` 用插件默认键位。
+- [x] snacks 的 `<leader>gd`、`<leader>gD` 与 gitsigns 的 `<leader>gh*` 保留。
+- [ ] TUI 实操：文件面板切文件、单文件 diff、stage 与布局切换。
+
+### 工作树
+
+- [x] `<leader>gw` 打开 `:DiffviewWorktreeOverview`；临时仓库两项工作树
+  均列出，含 ahead/behind、numstat 与 dirty 计数。
+- [x] `<leader>gW` 与 `:WorktreeSwitch` 走 `meow.worktree`：解析
+  `git worktree list --porcelain`，跳过 bare 与 prunable，切换后打开同名文件，
+  找不到时打开目标目录文件选择器；不重启 LSP。
+- [x] 解析器单元测试覆盖主树、斜杠分支、detached、locked、prunable、bare、
+  CRLF 与无尾空行。
+- [ ] TUI 实操：picker 选中切换、同名文件命中与未命中两条分支。
+
+### 闸门
+
+- [x] `lazy-lock.json` 52 条；`scripts/verify-lockfile.lua` 52/52，spec 图 51 件。
+- [x] `scripts/strong-smoke.lua` 52/52 载入，无 Error。
+- [x] `scripts/test-meow.lua` 67 项通过。
+- [x] `stylua --check .` 与 `selene lua init.lua plugin scripts` 全绿。
+- [x] 启动闸门通过：27.5/30.6/32.6/35.7/48.6，中位 32.6ms，低于 64.1ms 阈值；
+  负载高时曾测 76.8ms，基线提交同测 73.6ms，未改基线。
+- [ ] CI 首绿。
+
+### 否决项
+
+- aerial：不显示 LSP `detail`。
+- 上游 `sindrets/diffview.nvim`：停更。
+- `codediff.nvim`：原生二进制不受锁管理。
+- `neogit`：体量大，和 lazygit 重叠。
+- `awerebea/git-worktrees.nvim`、`Juksuu/worktrees.nvim`：对“只切 cwd”超出需求。

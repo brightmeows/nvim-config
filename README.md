@@ -1,7 +1,8 @@
 # nvim-config
 
 我的 Neovim 配置：`lazy.nvim` 驱动的自研配置（无 LazyVim 发行版），
-行为上对 LazyVim 16.0 全量复刻（复刻范围与验收方式见
+行为上以 LazyVim 16.0 为基线全量复刻，另含少量自增功能（outline、
+diffview-plus、worktree 切换；范围与验收见
 [`docs/acceptance.md`](docs/acceptance.md)）。
 
 ## 安装
@@ -75,6 +76,16 @@ plugin/after/       启动期直接生效的钩子（透明主题）
 scripts/            锁校验、强测 smoke、单元测试、启动闸门、文档同源（本地与 CI 共用）
 docs/acceptance.md  行为验收清单
 ```
+
+## 自增功能
+
+在 LazyVim 16.0 基线之外新增，验收记录在 `docs/acceptance.md` 第十九节：
+
+- `<leader>cs` / `<leader>cO` / `<leader>cT`：outline 开关与聚焦、trouble symbols
+- `<leader>sA` / `<leader>sI` / `<leader>sP`：项目 API 符号、LSP 声明、picker 总入口
+- `<leader>gv` / `<leader>gV` / `<leader>gT` / `<leader>gO` / `<leader>gw` / `<leader>gC`：
+  diff、文件历史、toggle 与日志、工作树概览、git 分支
+- `<leader>gW` / `<leader>uB`：切换工作树 cwd、行 blame 开关
 
 ## Omarchy 主题耦合
 
