@@ -96,10 +96,11 @@ colorscheme 件走 lazy=true。
 - [x] `pre-commit run --all-files`（stylua + selene）全绿、0 告警
 - [x] CI 全绿（首绿 run 36301007177）：lint、三平台强测 smoke、lockfile
   全新安装与逐 rev 校验
-- [ ] pre-push 行为闸门全绿（自判 smoke、meow 单元、锁与 spec 双向）
-- [ ] `commit-msg` 骨架校验生效（合规通过、不合规阻断）
-- [ ] 文档命令串同源检查通过（`scripts/check-docs-sync.lua`）
-- [ ] nightly 矩阵首跑结果记录（仅报告，不阻断）
+- [x] pre-push 行为闸门全绿（自判 smoke、meow 单元、锁与 spec 双向）
+- [x] `commit-msg` 骨架校验生效（合规通过、不合规阻断）
+- [x] 文档命令串同源检查通过（`scripts/check-docs-sync.lua`）
+- [x] 新增 job 首绿（run 43573387937）：docs 同源、三平台 smoke 含单元、
+  lockfile、nightly（仅报告）
 - 注：runner 无 `tree-sitter` CLI，smoke job 经 npm 预装；mason 等异步安装
   收敛在不设闸的安装步完成（`scripts/settle-installs.lua`，本地与 CI 同源），
   强测步零在途安装（首跑失败根因已记录于 ci 提交 d663a0a）
