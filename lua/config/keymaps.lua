@@ -167,6 +167,20 @@ if vim.lsp.inlay_hint then
   Snacks.toggle.inlay_hints():map("<leader>uh")
 end
 
+local function line_blame_state()
+  return require("gitsigns.config").config.current_line_blame
+end
+
+local function set_line_blame(state)
+  require("gitsigns").toggle_current_line_blame(state)
+end
+
+Snacks.toggle({
+  name = "Line Blame",
+  get = line_blame_state,
+  set = set_line_blame,
+}):map("<leader>uB")
+
 -- lazygit
 if vim.fn.executable("lazygit") == 1 then
   map("n", "<leader>gg", function()
