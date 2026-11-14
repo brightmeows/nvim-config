@@ -28,11 +28,10 @@ if not vim.uv.fs_stat(lazypath) then
     vim.fn.getchar()
     os.exit(1)
   end
-end
--- 锁对齐（2026-10-17 CI lockfile job 失败根因）：bootstrap 落点是 stable 分支 HEAD，
--- 而 lazy-lock.json 锁的 lazy.nvim 可能已随同步升到 main 分支 commit——首克隆 HEAD 与
--- 锁分叉，verify-lockfile 必挂。首克隆后立即按锁 checkout（lock 无该条目时不动）。
-do
+  -- 首克隆对齐（2026-10-17 CI lockfile job 失败根因）：bootstrap 落点是 stable 分支
+  -- HEAD，而 lazy-lock.json 锁的 lazy.nvim 可能已随同步升到 main 分支 commit，首克隆
+  -- HEAD 与锁分叉会让 verify-lockfile 必挂。只在本次确实克隆时 checkout：每次启动都跑
+  -- 要多付约 200ms，后续错位由 meow.lockguard 异步只读提示 :Lazy restore。
   local lock_path = vim.fs.joinpath(vim.fn.stdpath("config"), "lazy-lock.json")
   if vim.uv.fs_stat(lock_path) then
     local ok, lock = pcall(vim.json.decode, table.concat(vim.fn.readfile(lock_path), "\n"))
