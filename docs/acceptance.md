@@ -172,7 +172,8 @@ colorscheme 件走 lazy=true。
 
 ## 十五、自定义件
 
-- [ ] remote_clipboard：Wayland / tmux OSC52 / SSH 分支
+- [ ] remote_clipboard：Wayland / tmux 缓冲 / SSH 分支（粘贴不回询
+  OSC 52，读取兜底本实例 last_copy；复制在 tmux 内经 load-buffer 发出）
 - [ ] `plugin/after/transparency.lua` 每次启动生效
 - [ ] 会话 persistence `<leader>qs/qS/ql/qd`
 
@@ -181,6 +182,9 @@ colorscheme 件走 lazy=true。
 - LazyVim Changelog（`<leader>L`）→ Neovim news（发行版概念已移除）
 - dashboard 的 `x` 键（`:LazyExtras`）移除（extras 概念不存在）
 - remote_clipboard 在 options 早期生效（基线 VeryLazy 时序的既有偏离，本次未动）
+- remote_clipboard 采用 Omarchy 上游策略：粘贴只读 Wayland 与 tmux 缓冲，
+  不回询 OSC 52（读取失败兜底本实例 last_copy）；setup 内的 unnamedplus
+  同步被 options.lua 的基线赋值覆盖，SSH 下 clipboard 仍为空串
 - 非 Omarchy 机器的静态回退主题由 `meow.theme.load` 触发（机制换了、失败
   分支行为与切换前一致）
 
