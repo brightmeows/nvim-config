@@ -223,6 +223,10 @@ return {
     add("<leader>gP", function()
       Snacks.picker.gh_pr({ state = "all" })
     end, "GitHub Pull Requests (all)")
+    local function git_branches()
+      Snacks.picker.git_branches()
+    end
+    add("<leader>gC", git_branches, "Git Branches")
     -- Grep
     add("<leader>sb", function()
       Snacks.picker.lines()
@@ -235,6 +239,14 @@ return {
     add("<leader>sp", function()
       Snacks.picker.lazy()
     end, "Search for Plugin Spec")
+    local function pickers()
+      Snacks.picker.pickers()
+    end
+    add("<leader>sP", pickers, "Pickers")
+    local function lsp_declarations()
+      Snacks.picker.lsp_declarations()
+    end
+    add("<leader>sI", lsp_declarations, "LSP Declarations")
     add("<leader>sw", pick("grep_word"), "Visual selection or word (Root Dir)", { "n", "x" })
     add("<leader>sW", pick("grep_word", { root = false }), "Visual selection or word (cwd)", { "n", "x" })
     -- search
@@ -394,6 +406,23 @@ return {
           Snacks.picker.lsp_workspace_symbols({ filter = require("meow").kind_filter })
         end,
         desc = "LSP Workspace Symbols",
+        has = "workspace/symbols",
+      },
+      {
+        "<leader>sA",
+        function()
+          Snacks.picker.lsp_workspace_symbols({
+            filter = require("meow").api_kind_filter,
+            format = function(item, picker)
+              local ret = require("snacks.picker.format").lsp_symbol(item, picker)
+              if item.detail and item.detail ~= "" then
+                ret[#ret + 1] = { " " .. vim.trim(item.detail), "Comment" }
+              end
+              return ret
+            end,
+          })
+        end,
+        desc = "LSP Workspace API Symbols",
         has = "workspace/symbols",
       },
       {

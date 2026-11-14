@@ -109,4 +109,20 @@ M.kind_filter = {
   },
 }
 
+-- 项目级 API 过滤：只留类型、函数、方法、模块，去掉字段、属性、变量与 lua 控制流。
+M.api_kind_filter = {
+  default = {
+    "Class",
+    "Constructor",
+    "Enum",
+    "Function",
+    "Interface",
+    "Method",
+    "Module",
+    "Namespace",
+    "Struct",
+    "Trait",
+  },
+}
+
 return M

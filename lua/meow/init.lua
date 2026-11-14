@@ -7,9 +7,10 @@ local M = {}
 -- 图标与 kind 过滤（meow/icons.lua）
 M.icons = require("meow.icons").icons
 M.kind_filter = require("meow.icons").kind_filter
+M.api_kind_filter = require("meow.icons").api_kind_filter
 
 -- 兼容移植代码中的 LazyVim.config.icons / config.kind_filter 写法
-M.config = { icons = M.icons, kind_filter = M.kind_filter }
+M.config = { icons = M.icons, kind_filter = M.kind_filter, api_kind_filter = M.api_kind_filter }
 
 -- 子模块懒加载（root/format/pick/lsp/treesitter/mini/lualine/cmp）：
 -- 与 LazyVim util 的 __index 行为一致，移植代码的 LazyVim.format.* 等调用由此解析。
