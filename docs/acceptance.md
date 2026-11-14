@@ -264,7 +264,7 @@ colorscheme 件走 lazy=true。
 - [x] `stylua --check .` 与 `selene lua init.lua plugin scripts` 全绿。
 - [x] 启动闸门通过：27.5/30.6/32.6/35.7/48.6，中位 32.6ms，低于 64.1ms 阈值；
   负载高时曾测 76.8ms，基线提交同测 73.6ms，未改基线。
-- [ ] CI 首绿。
+- [x] CI 首绿（run 43614005752）：lint、三平台 smoke、lockfile、docs 全绿。
 
 ### 否决项
 
