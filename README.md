@@ -50,11 +50,18 @@ nvim                          # 新机首启按锁装齐；已装件由对齐守
 
 ```bash
 sudo pacman -S pre-commit stylua selene   # Arch；其它平台用上游发布包 / pip
-cd ~/.config/nvim && pre-commit install   # 在配置目录内启用钩子
+cd ~/.config/nvim && pre-commit install -t pre-commit -t commit-msg -t pre-push
 ```
 
+钩子分三段：提交跑格式与静态检查，`commit-msg` 校验 Conventional Commits
+骨架，推送前跑强测 smoke、meow 单元测试与锁/spec 校验。
+
+启动耗时只在本机判定：`nvim -l scripts/startup-gate.lua`（加 `--update` 重定
+`scripts/startup-baseline.json`）。
+
 CI（GitHub Actions）以 `pre-commit run --all-files` 跑同一组 lint，另含
-三平台 headless 强测 smoke 与 lockfile 全新安装测试。
+三平台 headless 强测 smoke 与 meow 单元测试、lockfile 全新安装与逐 rev 校验、
+文档命令串同源检查，以及只报告不阻断的 nightly 矩阵。
 
 ## 结构
 
@@ -65,7 +72,7 @@ lua/config/         全局选项、autocmd、keymaps、自定义件
 lua/plugins/        每插件一个文件，返回 lazy spec + config
 lua/meow/           自研工具层（行为源 LazyVim 16.0 util）
 plugin/after/       启动期直接生效的钩子（透明主题）
-scripts/            锁文件逐 rev 校验与强测 smoke（本地与 CI 共用）
+scripts/            锁校验、强测 smoke、单元测试、启动闸门、文档同源（本地与 CI 共用）
 docs/acceptance.md  行为验收清单
 ```
 

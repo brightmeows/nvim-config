@@ -76,9 +76,12 @@ colorscheme 件走 lazy=true。
 
 ## 五、性能
 
-- [x] 切换后本机六次 `--startuptime` 中位 **32.1ms**（29.9 / 31.7 / 31.9 /
-  32.4 / 37.2 / 42.5，终版状态复测），低于 100ms 门槛，优于基线 56ms
-  与 vim.pack 终态 164ms（中间态另测过 33.3ms，同结论）
+- [x] 本机 `--startuptime` 中位 **29.4ms**（2026-11-14 五次：27.5 / 28.9 /
+  29.4 / 29.5 / 29.5），低于 100ms 门槛。历史：切换后 32.1ms；22e3770 的
+  首克隆对齐误做成每次启动 checkout，中位升至 261 至 340ms，收窄到首克隆
+  分支后回落
+- [x] 启动闸门 `nvim -l scripts/startup-gate.lua` 通过：五次中位不超基线
+  1.5 倍加 20ms，基线存 `scripts/startup-baseline.json`；仅本机执行
 - [x] dashboard 页脚为原生 lazy.stats：伪 TUI（80x35）实测
   “Neovim loaded 3/50 plugins in 35.13ms”
 
@@ -93,6 +96,10 @@ colorscheme 件走 lazy=true。
 - [x] `pre-commit run --all-files`（stylua + selene）全绿、0 告警
 - [x] CI 全绿（首绿 run 36301007177）：lint、三平台强测 smoke、lockfile
   全新安装与逐 rev 校验
+- [ ] pre-push 行为闸门全绿（自判 smoke、meow 单元、锁与 spec 双向）
+- [ ] `commit-msg` 骨架校验生效（合规通过、不合规阻断）
+- [ ] 文档命令串同源检查通过（`scripts/check-docs-sync.lua`）
+- [ ] nightly 矩阵首跑结果记录（仅报告，不阻断）
 - 注：runner 无 `tree-sitter` CLI，smoke job 经 npm 预装；mason 等异步安装
   收敛在不设闸的安装步完成（`scripts/settle-installs.lua`，本地与 CI 同源），
   强测步零在途安装（首跑失败根因已记录于 ci 提交 d663a0a）

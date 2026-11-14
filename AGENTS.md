@@ -23,24 +23,35 @@
 ```bash
 stylua --check .                    # 格式（工具安装见 README“本地检查”节）
 selene lua init.lua plugin scripts  # 静态检查（std 配置：selene.toml / vim.yml）
-nvim -l scripts/verify-lockfile.lua # 锁文件与盘上插件 git HEAD 一致性
+nvim -l scripts/verify-lockfile.lua # 锁与盘上 HEAD 一致，spec 图与锁双向覆盖
+nvim -l scripts/test-meow.lua       # meow 纯函数单元测试
+nvim -l scripts/check-docs-sync.lua # 文档与配置的命令串同源
 ```
 
-headless 强测 smoke（与 CI smoke 步骤同源），判据为退出码 0 且输出不含 `Error`
-（允许 warning）——事件触发加程序化补载，拉起全部插件后判定：
+headless 强测 smoke：事件触发加程序化补载拉起全部插件，错误消息、未载入与
+fire 失败都由脚本 `cquit 1` 自判：
 
 ```bash
 nvim --headless -c 'luafile scripts/strong-smoke.lua' -c 'qa!'
 ```
 
-提交钩子启用一次即可（`pre-commit install`）；未启用时提交前
-显式跑上述检查。
+启动耗时闸门只在本机跑，判据为五次中位不超基线 1.5 倍加 20ms；换机或 Neovim
+大版本升级后重定基线：
+
+```bash
+nvim -l scripts/startup-gate.lua           # 判定并打印各次耗时
+nvim -l scripts/startup-gate.lua --update  # 重写 scripts/startup-baseline.json
+```
+
+钩子分三段：提交跑格式与静态检查，`commit-msg` 校验提交信息骨架，推送前跑
+smoke、单元与锁校验。启用命令见 README“本地检查”节。
 
 ## 提交规范
 
 Conventional Commits：`type(scope): 中文主题`，type/scope 小写 kebab-case；
 一个提交一个逻辑变更、每个提交可独立 revert；style / fix / docs / ci 与
-chore 不同 type 分开提交。
+chore 不同 type 分开提交。骨架由 `commit-msg` 钩子校验，Merge、Revert、
+fixup、squash、amend 豁免。
 
 ## 结构
 
