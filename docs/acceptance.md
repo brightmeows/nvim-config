@@ -148,9 +148,15 @@ colorscheme 件走 lazy=true。
 ## 十一、LSP 与补全
 
 - [ ] mason 管理 lua-language-server、shfmt、stylua（首开 lua 文件后按链加载）
-- [ ] mason-lspconfig 自动 enable 已装 server（lua_ls 生效）
-- [ ] LSP 键位（`gd/gr/gI/gy/gD`、`K/gK`、`<leader>c*`、`]]/[[`、`<a-n/p>`）
-  含 `has` 条件逐个生效
+- [ ] `servers` 表是默认候选集：`lua_ls` 始终启用，其余 server 仅在
+  `cmd_available` 通过时启用；`mason-lspconfig` 的 `automatic_enable = false`，
+  mason 只保证 `lua_ls`，其余需本机已装
+- [ ] 未装 server 不进入启用集；picker 的 installed 列可辨，打开对应文件不报错
+- [ ] LSP 键位（`gd/grr/gI/gy/gD`、`K/gK`、`<leader>c*`、`]]/[[`、`<a-n/p>`）
+  含 `has` 条件逐个生效；`grr` 保留 Neovim 原生 `grn/gra` 前缀
+- [ ] `<leader>cl` 在无 client 时可打开 LSP picker；面板 `<c-t>` 启停、`<c-r>` 重启，
+  启停后现有 buffer 由 `vim.lsp.enable` 的 doautoall 补挂
+- [ ] lualine `lsp_status` 显示活动 client 数量与进度（`show_name = false`）
 - [ ] inlay hints、diagnostics 显示与基线一致；`<leader>cd` 行内诊断浮动
 - [ ] blink `<C-Space>`、Enter/Tab 确认、friendly-snippets 片段、lazydev 库补全
 
@@ -195,6 +201,11 @@ colorscheme 件走 lazy=true。
   同步被 options.lua 的基线赋值覆盖，SSH 下 clipboard 仍为空串
 - 非 Omarchy 机器的静态回退主题由 `meow.theme.load` 触发（机制换了、失败
   分支行为与切换前一致）
+- `gr` 改为 `grr`（基线 snacks_picker 用 `gr`），保留 Neovim 原生 `grn/gra` 前缀
+- `<leader>cl` 全局可用（基线仅在 client attach 后可用），面板增加 `<c-t>` 启停与
+  `<c-r>` 重启
+- 默认启用集扩为 `lua_ls、rust_analyzer、clangd、ts_ls、bashls、marksman`；
+  `lua_ls` 始终启用，其余仅在本机可执行文件存在时启用
 
 ## 十七、非目标（本次不做，显式点名）
 
@@ -255,6 +266,17 @@ colorscheme 件走 lazy=true。
 - [x] 解析器单元测试覆盖主树、斜杠分支、detached、locked、prunable、bare、
   CRLF 与无尾空行。
 - [ ] TUI 实操：picker 选中切换、同名文件命中与未命中两条分支。
+
+### LSP 面板与状态栏
+
+- [x] `<leader>cl` 全局可用，打开 Snacks `lsp_config` 面板；无 client 时也能管理。
+- [x] 面板 `<c-t>` 启停、`<c-r>` 重启；启停走 `vim.lsp.enable`，现有 buffer 由
+  Neovim 的 doautoall 补挂，不再手动触发 FileType。
+- [x] `servers` 表是默认候选集：`lua_ls` 始终启用，其余按 `cmd_available` 过滤；
+  函数式 `cmd`（`ts_ls`）按可用处理，缺件由 picker 的 installed 列提示。
+- [x] lualine `lsp_status` 放到 `lualine_x` 首位，`show_name = false`，显示活动
+  client 数量与进度。
+- [ ] TUI 实操：无 client 开面板、启停与重启各一次、缺件 server 显示。
 
 ### 闸门
 

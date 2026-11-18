@@ -49,6 +49,11 @@ return {
           { meow.lualine.pretty_path() },
         },
         lualine_x = {
+          {
+            "lsp_status",
+            show_name = false,
+            symbols = { separator = " " },
+          },
           Snacks.profiler.status(),
           {
             function()

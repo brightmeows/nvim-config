@@ -79,10 +79,13 @@ docs/acceptance.md  行为验收清单
 
 ## 自增功能
 
-在 LazyVim 16.0 基线之外新增，验收记录在 `docs/acceptance.md` 第十九节：
+在 LazyVim 16.0 基线之外新增，验收记录在 `docs/acceptance.md` 第十六节（保留差异）
+与第十九节（自增功能）：
 
 - `<leader>cs` / `<leader>cO` / `<leader>cT`：outline 开关与聚焦、trouble symbols
 - `<leader>sA` / `<leader>sI` / `<leader>sP`：项目 API 符号、LSP 声明、picker 总入口
+- `<leader>cl`：LSP picker 面板，`<c-t>` 启停、`<c-r>` 重启
+- lualine `lsp_status`：活动 client 数量与进度（`show_name = false`）
 - `<leader>gv` / `<leader>gV` / `<leader>gT` / `<leader>gO` / `<leader>gw` / `<leader>gC`：
   diff、文件历史、toggle 与日志、工作树概览、git 分支
 - `<leader>gW` / `<leader>uB`：切换工作树 cwd、行 blame 开关

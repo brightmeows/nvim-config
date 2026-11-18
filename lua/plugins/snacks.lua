@@ -371,12 +371,13 @@ return {
         has = "definition",
       },
       {
-        "gr",
+        "grr",
         function()
           Snacks.picker.lsp_references()
         end,
         nowait = true,
         desc = "References",
+        has = "references",
       },
       {
         "gI",

@@ -3,6 +3,92 @@
 -- BufReadPre/BufNewFile 事件、dependencies 带 mason 与 mason-lspconfig
 --（占位空 config，setup 由本文件 lspconfig 段调用），mason 挂 cmd/keys/build；
 -- mason 安装成功后的 FileType 重触发恢复（懒加载专用，行为源同款）。
+-- 差异：servers 表是默认候选集（automatic_enable=false；lua_ls 始终启用，
+-- 其余按 cmd 可用性过滤）；<leader>cl 全局化并加启停面板。
+
+-- cmd 为函数的 server（如 ts_ls）静态判断不了可执行文件，按可用处理；
+-- 只过滤 cmd 为表的 server。缺件时 Neovim 静默不启动，由 picker 的
+-- installed 列提示。
+
+---@param name string
+local function cmd_available(name)
+  local ok, config = pcall(function()
+    return vim.lsp.config[name]
+  end)
+  if not ok then
+    return true
+  end
+  local cmd = (config or {}).cmd
+  if type(cmd) == "table" then
+    return cmd[1] ~= nil and vim.fn.executable(cmd[1]) == 1
+  end
+  return true
+end
+
+---@param picker snacks.Picker
+---@param item? snacks.picker.lsp.config.Item
+local function lsp_toggle(picker, item)
+  if not item then
+    return
+  end
+  local enable = not vim.lsp.is_enabled(item.name)
+  if enable and not cmd_available(item.name) then
+    Snacks.notify.warn(("`%s` 的可执行文件不在 PATH，启动会失败。"):format(item.name))
+    return
+  end
+  local ok, err = pcall(vim.lsp.enable, item.name, enable)
+  if not ok then
+    Snacks.notify.error(("`%s` 启用失败：%s"):format(item.name, err))
+    return
+  end
+  picker:refresh()
+end
+
+---@param picker snacks.Picker
+---@param item? snacks.picker.lsp.config.Item
+local function lsp_restart(picker, item)
+  if not item then
+    return
+  end
+  if #vim.lsp.get_clients({ name = item.name }) == 0 then
+    Snacks.notify.warn(("`%s` 没有活动 client。"):format(item.name))
+    return
+  end
+  vim.cmd("lsp restart " .. vim.fn.fnameescape(item.name))
+  picker:refresh()
+end
+
+local function lsp_manage()
+  vim.schedule(function()
+    Snacks.picker.lsp_config({
+      actions = {
+        lsp_toggle = lsp_toggle,
+        lsp_restart = lsp_restart,
+      },
+      win = {
+        input = {
+          keys = {
+            ["<c-t>"] = { "lsp_toggle", mode = { "n", "i" }, desc = "Toggle LSP" },
+            ["<c-r>"] = { "lsp_restart", mode = { "n", "i" }, desc = "Restart LSP" },
+          },
+        },
+        list = {
+          keys = {
+            ["<c-t>"] = { "lsp_toggle", mode = { "n" }, desc = "Toggle LSP" },
+            ["<c-r>"] = { "lsp_restart", mode = { "n" }, desc = "Restart LSP" },
+          },
+        },
+      },
+    })
+  end)
+end
+
+-- 启动期就注册，空 buffer 也能用；首次触发时按需拉起 nvim-lspconfig。
+vim.keymap.set("n", "<leader>cl", function()
+  require("lazy").load({ plugins = { "nvim-lspconfig" } })
+  lsp_manage()
+end, { desc = "Lsp Info", silent = true })
+
 return {
   {
     "https://github.com/mason-org/mason.nvim",
@@ -66,19 +152,8 @@ return {
       }
       vim.diagnostic.config(vim.deepcopy(diagnostics))
 
-      -- LSP server 公共配置：capabilities + 键位（snacks_picker extra 版本——基线真值）
+      -- LSP server 公共键位：gd/grr/gI/gy 由 snacks picker 提供，这里只留 gD 与其余公共键
       local server_keys = {
-        {
-          "<leader>cl",
-          function()
-            Snacks.picker.lsp_config()
-          end,
-          desc = "Lsp Info",
-        },
-        { "gd", vim.lsp.buf.definition, desc = "Goto Definition", has = "definition" },
-        { "gr", vim.lsp.buf.references, desc = "References", nowait = true },
-        { "gI", vim.lsp.buf.implementation, desc = "Goto Implementation" },
-        { "gy", vim.lsp.buf.type_definition, desc = "Goto T[y]pe Definition" },
         { "gD", vim.lsp.buf.declaration, desc = "Goto Declaration", has = "declaration" },
         {
           "K",
@@ -207,9 +282,8 @@ return {
         },
       })
 
-      -- 逐 server 配置（LazyVim configure() 同语义）
+      -- 逐 server 配置：servers 表是默认候选集，lua_ls 始终启用，其余按可用性过滤
       local servers = {
-        stylua = { enabled = false },
         lua_ls = {
           settings = {
             Lua = {
@@ -228,37 +302,23 @@ return {
             },
           },
         },
+        rust_analyzer = {},
+        clangd = {},
+        ts_ls = {},
+        bashls = {},
+        marksman = {},
       }
 
-      local mason_all = {}
-      local mason_exclude = {}
-      local ok_mason_lspconfig, mason_map = pcall(function()
-        return require("mason-lspconfig.mappings").get_mason_map().lspconfig_to_package
-      end)
-      if ok_mason_lspconfig then
-        mason_all = vim.tbl_keys(mason_map)
-      end
-
-      local install = {}
       for server, sopts in pairs(servers) do
-        if sopts.enabled == false then
-          mason_exclude[#mason_exclude + 1] = server
-        else
-          vim.lsp.config(server, sopts)
-          local use_mason = vim.tbl_contains(mason_all, server)
-          if not use_mason then
-            vim.lsp.enable(server)
-          end
-          install[#install + 1] = server
+        vim.lsp.config(server, sopts)
+        if server == "lua_ls" or cmd_available(server) then
+          vim.lsp.enable(server)
         end
       end
-      -- stylua 从 servers 表排除但仍由 mason 保证安装（LazyVim 语义）
-      vim.list_extend(install, {})
 
       require("mason-lspconfig").setup({
-        -- servers 表中走 mason 的 server（当前仅 lua_ls；stylua 已排除）
         ensure_installed = { "lua_ls" },
-        automatic_enable = { exclude = mason_exclude },
+        automatic_enable = false,
       })
 
       -- inlay hints（LazyVim：Snacks.util.lsp.on 按能力触发）
