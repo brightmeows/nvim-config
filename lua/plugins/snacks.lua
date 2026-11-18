@@ -384,6 +384,7 @@ return {
           Snacks.picker.lsp_implementations()
         end,
         desc = "Goto Implementation",
+        has = "implementation",
       },
       {
         "gy",
@@ -391,6 +392,7 @@ return {
           Snacks.picker.lsp_type_definitions()
         end,
         desc = "Goto T[y]pe Definition",
+        has = "typeDefinition",
       },
       {
         "<leader>ss",
@@ -406,7 +408,7 @@ return {
           Snacks.picker.lsp_workspace_symbols({ filter = require("meow").kind_filter })
         end,
         desc = "LSP Workspace Symbols",
-        has = "workspace/symbols",
+        has = "workspace/symbol",
       },
       {
         "<leader>sA",
@@ -423,7 +425,7 @@ return {
           })
         end,
         desc = "LSP Workspace API Symbols",
-        has = "workspace/symbols",
+        has = "workspace/symbol",
       },
       {
         "gai",
@@ -443,11 +445,15 @@ return {
       },
     }
     for _, k in ipairs(lsp_keys) do
+      local method = k.has
+      if method and not method:find("/") then
+        method = "textDocument/" .. method
+      end
       Snacks.keymap.set("n", k[1], k[2], {
         desc = k.desc,
         nowait = k.nowait,
         silent = true,
-        lsp = { method = k.has and ("textDocument/" .. k.has) or nil },
+        lsp = { method = method },
       })
     end
   end,
